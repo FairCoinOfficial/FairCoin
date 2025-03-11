@@ -1,0 +1,4 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+src/test/test_faircoin filter=lfs diff=lfs merge=lfs -text
+src/faircoind filter=lfs diff=lfs merge=lfs -text
