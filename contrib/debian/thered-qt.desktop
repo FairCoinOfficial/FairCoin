@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=faircoin
+Comment=faircoin P2P Cryptocurrency
+Comment[fr]=faircoin, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=faircoin, eşten eşe kriptografik sanal para birimi
+Exec=faircoin-qt %u
+Terminal=false
+Type=Application
+Icon=faircoin128
+MimeType=x-scheme-handler/faircoin;
+Categories=Office;Finance;

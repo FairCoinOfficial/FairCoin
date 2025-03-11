@@ -1,0 +1,26 @@
+# /etc/conf.d/faircoind: config file for /etc/init.d/faircoind
+
+# Config file location
+#BITCOIND_CONFIGFILE="/etc/faircoin/faircoin.conf"
+
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/faircoind"
+
+# What filename to give the pidfile
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/faircoind.pid"
+
+# Where to write faircoind data (be mindful that the blockchain is large)
+#BITCOIND_DATADIR="/var/lib/faircoind"
+
+# User and group to own faircoind process
+#BITCOIND_USER="faircoin"
+#BITCOIND_GROUP="faircoin"
+
+# Path to faircoind executable
+#BITCOIND_BIN="/usr/bin/faircoind"
+
+# Nice value to run faircoind under
+#BITCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+BITCOIND_OPTS=""

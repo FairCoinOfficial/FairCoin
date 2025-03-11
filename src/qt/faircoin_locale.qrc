@@ -1,0 +1,28 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="bg">locale/faircoin_bg.qm</file>
+        <file alias="ca">locale/faircoin_ca.qm</file>
+        <file alias="cs">locale/faircoin_cs.qm</file>
+        <file alias="da">locale/faircoin_da.qm</file>
+        <file alias="de">locale/faircoin_de.qm</file>
+        <file alias="en">locale/faircoin_en.qm</file>
+        <file alias="en_US">locale/faircoin_en_US.qm</file>
+        <file alias="es">locale/faircoin_es.qm</file>
+        <file alias="fi">locale/faircoin_fi.qm</file>
+        <file alias="fr_FR">locale/faircoin_fr_FR.qm</file>
+        <file alias="it">locale/faircoin_it.qm</file>
+        <file alias="ja">locale/faircoin_ja.qm</file>
+        <file alias="ko_KR">locale/faircoin_ko_KR.qm</file>
+        <file alias="nl">locale/faircoin_nl.qm</file>
+        <file alias="pl">locale/faircoin_pl.qm</file>
+        <file alias="pt">locale/faircoin_pt.qm</file>
+        <file alias="pt_BR">locale/faircoin_pt_BR.qm</file>
+        <file alias="ro_RO">locale/faircoin_ro_RO.qm</file>
+        <file alias="ru">locale/faircoin_ru.qm</file>
+        <file alias="sk">locale/faircoin_sk.qm</file>
+        <file alias="sv">locale/faircoin_sv.qm</file>
+        <file alias="uk">locale/faircoin_uk.qm</file>
+        <file alias="zh_CN">locale/faircoin_zh_CN.qm</file>
+        <file alias="zh_TW">locale/faircoin_zh_TW.qm</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,26 @@
+[Unit]
+Description=faircoin's distributed currency daemon
+After=network.target
+
+[Service]
+User=faircoin
+Group=faircoin
+
+Type=forking
+PIDFile=/var/lib/faircoind/faircoind.pid
+
+ExecStart=/usr/bin/faircoind -daemon -pid=/var/lib/faircoind/faircoind.pid \
+          -conf=/etc/faircoin/faircoin.conf -datadir=/var/lib/faircoind
+
+ExecStop=-/usr/bin/faircoin-cli -conf=/etc/faircoin/faircoin.conf \
+         -datadir=/var/lib/faircoind stop
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
