@@ -410,7 +410,7 @@ public:
         assert(hashGenesisBlock == uint256("0xccdf2388923effa54d5268e8e1562bbd27f18fb191a72bd2a10663cb3fce63cd"));
         //assert(genesis.hashMerkleRoot == uint256("0x83d7618987a3d26b2ad11364d08303f5da3e20e2c00be086d30c90c655cda808"));
 
-        vSeeds.push_back(CDNSSeedData("93.189.91.83","93.189.91.83"));     // Primary DNS Seeder 
+        vSeeds.push_back(CDNSSeedData("seed1.fairco.in","seed2.fairco.in"));     // Primary DNS Seeder 
 
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 35);
