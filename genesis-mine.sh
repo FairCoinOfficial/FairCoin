@@ -388,11 +388,13 @@ echo ""
 
 cd "$SCRIPT_DIR"
 
+# Always re-run autogen if configure doesn't exist
 if [ ! -f configure ]; then
     echo "  Running autogen.sh..."
     ./autogen.sh
 fi
 
+# Always re-run configure if Makefile doesn't exist (or was cleaned)
 if [ ! -f Makefile ]; then
     echo "  Running configure..."
     CONFIGURE_FLAGS="--without-gui"
@@ -401,11 +403,20 @@ if [ ! -f Makefile ]; then
         echo "  (using --with-incompatible-bdb for Berkeley DB 5.x)"
         CONFIGURE_FLAGS="$CONFIGURE_FLAGS --with-incompatible-bdb"
     fi
-    ./configure $CONFIGURE_FLAGS 2>&1 | tail -3
+    if ! ./configure $CONFIGURE_FLAGS; then
+        echo ""
+        echo "  ERROR: configure failed. Check the output above."
+        echo "  You may need to install missing dependencies."
+        exit 1
+    fi
 fi
 
 echo "  Running make (this may take several minutes)..."
-make -j$(nproc) 2>&1 | tail -10
+if ! make -j$(nproc); then
+    echo ""
+    echo "  ERROR: Compilation failed. Check the output above."
+    exit 1
+fi
 
 echo ""
 echo "  ======================================================"
