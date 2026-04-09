@@ -13,13 +13,13 @@ BOOST_AUTO_TEST_SUITE(main_tests)
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
-    // Block 0: premine of 5,000,000 FAIR
+    // Block 0: unspendable genesis (10 FAIR standard reward)
     CAmount nSubsidy = GetBlockValue(0);
-    BOOST_CHECK_EQUAL(nSubsidy, 5000000 * COIN);
-
-    // Blocks 1+: 10 FAIR per block
-    nSubsidy = GetBlockValue(1);
     BOOST_CHECK_EQUAL(nSubsidy, 10 * COIN);
+
+    // Block 1: premine of 5,000,000 FAIR
+    nSubsidy = GetBlockValue(1);
+    BOOST_CHECK_EQUAL(nSubsidy, 5000000 * COIN);
 
     nSubsidy = GetBlockValue(10000);
     BOOST_CHECK_EQUAL(nSubsidy, 10 * COIN);

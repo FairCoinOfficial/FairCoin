@@ -1612,8 +1612,8 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 int64_t GetBlockValue(int nHeight)
 {
-    if (nHeight == 0)
-        return 5000000 * COIN; // premine
+    if (nHeight == 1)
+        return 5000000 * COIN; // premine on block 1 (block 0 coinbase is unspendable by protocol)
 
     int halvings = nHeight / 525600; // halving every ~2 years (2-min blocks)
     int64_t nSubsidy = 10 * COIN;
