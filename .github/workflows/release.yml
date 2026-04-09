@@ -149,28 +149,32 @@ jobs:
       - name: Install dependencies
         run: |
           brew install automake libtool pkg-config openssl@3 boost berkeley-db@4 miniupnpc libevent
+          brew link --force berkeley-db@4
 
       - name: Build
         run: |
+          export LDFLAGS="-L$(brew --prefix boost)/lib -L$(brew --prefix openssl@3)/lib -L$(brew --prefix berkeley-db@4)/lib -L$(brew --prefix miniupnpc)/lib -L$(brew --prefix libevent)/lib"
+          export CPPFLAGS="-I$(brew --prefix boost)/include -I$(brew --prefix openssl@3)/include -I$(brew --prefix berkeley-db@4)/include -I$(brew --prefix miniupnpc)/include -I$(brew --prefix libevent)/include"
+          export PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:$(brew --prefix libevent)/lib/pkgconfig"
           ./autogen.sh
           ./configure --without-gui --with-incompatible-bdb --disable-zmq \
-            --with-boost=$(brew --prefix boost) \
-            --with-openssl=$(brew --prefix openssl@3) || ./configure --without-gui --with-incompatible-bdb --disable-zmq
+            --with-boost=$(brew --prefix boost)
           make -j$(sysctl -n hw.ncpu)
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Package macOS
         run: |
-          mkdir -p faircoin-${{ github.ref_name }}-macos-x86_64
-          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-macos-x86_64/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-macos-x86_64/
-          tar czf faircoin-${{ github.ref_name }}-macos-x86_64.tar.gz faircoin-${{ github.ref_name }}-macos-x86_64/
+          ARCH=$(uname -m)
+          mkdir -p faircoin-${{ github.ref_name }}-macos-${ARCH}
+          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-macos-${ARCH}/
+          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-macos-${ARCH}/
+          tar czf faircoin-${{ github.ref_name }}-macos-${ARCH}.tar.gz faircoin-${{ github.ref_name }}-macos-${ARCH}/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-tarball
-          path: faircoin-${{ github.ref_name }}-macos-x86_64.tar.gz
+          path: faircoin-${{ github.ref_name }}-macos-*.tar.gz
 
   # ---------- Create GitHub Release ----------
   create-release:
@@ -188,7 +192,7 @@ jobs:
           path: artifacts
 
       - name: List artifacts
-        run: find artifacts -type f
+        run: find artifacts -type f || echo "No artifacts found"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
