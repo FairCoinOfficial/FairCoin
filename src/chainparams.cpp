@@ -331,30 +331,29 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 //    timestamp before)
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
-    boost::assign::map_list_of(0, uint256("0x"));
+    boost::assign::map_list_of(0, uint256("0x0")); // TODO: Update with new genesis hash
 static const Checkpoints::CCheckpointData data = {
     &mapCheckpoints,
-    1506091284, // * UNIX timestamp of last checkpoint block
-    1,    // * total number of transactions between genesis and last checkpoint
-                //   (the tx=... number in the SetBestChain debug.log lines)
-    2        // * estimated number of transactions per day after checkpoint
+    1744156800, // April 9, 2026 00:00:00 UTC
+    0,
+    0
 };
 
 static Checkpoints::MapCheckpoints mapCheckpointsTestnet =
-    boost::assign::map_list_of(0, uint256("0x001"));
+    boost::assign::map_list_of(0, uint256("0x0")); // TODO: Update with new testnet genesis hash
 static const Checkpoints::CCheckpointData dataTestnet = {
     &mapCheckpointsTestnet,
-    1454124731,
+    1744156800,
     0,
-    250};
+    0};
 
 static Checkpoints::MapCheckpoints mapCheckpointsRegtest =
-    boost::assign::map_list_of(0, uint256("0x001"));
+    boost::assign::map_list_of(0, uint256("0x0")); // TODO: Update with new regtest genesis hash
 static const Checkpoints::CCheckpointData dataRegtest = {
     &mapCheckpointsRegtest,
-    1454124731,
+    1744156800,
     0,
-    100};
+    0};
 
 class CMainParams : public CChainParams
 {
@@ -368,12 +367,13 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 4-byte int at any alignment.
          */
-        pchMessageStart[0] = 0xf2;
-        pchMessageStart[1] = 0xc2;
-        pchMessageStart[2] = 0xab;
-        pchMessageStart[3] = 0xd5;
-        vAlertPubKey = ParseHex("0000098d3ba6ba6e7423fa5cbd6a89e0a9a5348f88d332b44a5cb1a8b7ed2c1eaa335fc8dc4f012cb8241cc0bdafd6ca70c5f5448916e4e6f511bcd746ed57dc50");
-        nDefaultPort = 53472;
+        pchMessageStart[0] = 0xa3;
+        pchMessageStart[1] = 0xd7;
+        pchMessageStart[2] = 0xe1;
+        pchMessageStart[3] = 0xb4;
+        // REPLACE: Generate your own alert key pair (see doc/GENERATE-KEYS.md)
+        vAlertPubKey = ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        nDefaultPort = 46372;
         bnProofOfWorkLimit = ~uint256(0) >> 20; // faircoin starting difficulty is 1 / 2^12
         nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
@@ -383,39 +383,41 @@ public:
         nMinerThreads = 0;
         nTargetTimespan = 2 * 60; //
         nTargetSpacing = 1 * 120;  // faircoin: 2 minute
-        nLastPOWBlock = 25000;
+        nLastPOWBlock = 10000;
         nMaturity = 6;
         nMasternodeCountDrift = 20;
         nModifierUpdateBlock = 615800;
-        nMaxMoneyOut = 53193831 * COIN;
+        nMaxMoneyOut = 33000000 * COIN;
 
-        const char* pszTimestamp = "faircoin is born";
+        const char* pszTimestamp = "FairCoin genesis - a new beginning - fairco.in";
         CMutableTransaction txNew;
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 250 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04c10e83b2703ccf322f7dbd62dd5855ac7c10bd055814ce121ba32607d573b8810c02c0582aed05b4deb9c4b77b26d92428c61256cd42774babea0a073b2ed0c9") << OP_CHECKSIG;
+        txNew.vout[0].nValue = 0 * COIN;
+        // REPLACE: Generate your own genesis key pair (see doc/GENERATE-KEYS.md) - this key receives the premine
+        txNew.vout[0].scriptPubKey = CScript() << ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") << OP_CHECKSIG;
         genesis.vtx.push_back(txNew);
         genesis.hashPrevBlock = 0;
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         genesis.nVersion = 1;
-        genesis.nTime = 1646354651;
+        genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
         genesis.nBits = 0x1e0ffff0;
-        genesis.nNonce = 6136542;
+        genesis.nNonce = 0; // TODO: Re-mine genesis block to find valid nonce
 
         hashGenesisBlock = genesis.GetHash();
 
+        // TODO: Update these asserts after mining the new genesis block
+        //assert(hashGenesisBlock == uint256("0xNEW_GENESIS_HASH"));
+        //assert(genesis.hashMerkleRoot == uint256("0xNEW_MERKLE_ROOT"));
 
-        assert(hashGenesisBlock == uint256("0xccdf2388923effa54d5268e8e1562bbd27f18fb191a72bd2a10663cb3fce63cd"));
-        //assert(genesis.hashMerkleRoot == uint256("0x83d7618987a3d26b2ad11364d08303f5da3e20e2c00be086d30c90c655cda808"));
-
-        vSeeds.push_back(CDNSSeedData("seed1.fairco.in","seed2.fairco.in"));     // Primary DNS Seeder 
+        vSeeds.push_back(CDNSSeedData("seed1.fairco.in", "seed1.fairco.in"));
+        vSeeds.push_back(CDNSSeedData("seed2.fairco.in", "seed2.fairco.in"));
 
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 35);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 36);
-        base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 212);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 35);  // Addresses start with 'F'
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 16); // Script addresses start with '3'
+        base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 163);    // 35 + 128
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x02)(0x2D)(0x25)(0x33).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x02)(0x21)(0x31)(0x2B).convert_to_container<std::vector<unsigned char> >();
         // 	BIP44 coin type is from https://github.com/satoshilabs/slips/blob/master/slip-0044.md
@@ -434,9 +436,10 @@ public:
         fHeadersFirstSyncingActive = false;
 
         nPoolMaxTransactions = 3;
-        strSporkKey = "0484698d3ba6ba6e7423fa5cbd6a89e0a9a5348f88d332b44a5cb1a8b7ed2c1eaa335fc8dc4f012cb8241cc0bdafd6ca70c5f5448916e4e6f511bcd746ed57dc50";
-        //strSporkKey = "04B433E6598390C992F4F022F20D3B4CBBE691652EE7C48243B81701CBDB7CC7D7BF0EE09E154E6FCBF2043D65AF4E9E97B89B5DBAF830D83B9B7F469A6C45A717";
-        strObfuscationPoolDummyAddress = "D87q2gC9j6nNrnzCsg4aY6bHMLsT9nUhEw";
+        // REPLACE: Generate your own spork key pair (see doc/GENERATE-KEYS.md)
+        strSporkKey = "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        // REPLACE: Generate a valid FairCoin address for the obfuscation pool dummy
+        strObfuscationPoolDummyAddress = "REPLACE_WITH_VALID_FAIRCOIN_ADDRESS";
         nStartMasternodePayments = 1403728576; //Wed, 25 Jun 2014 20:36:16 GMT
     }
 
@@ -457,12 +460,13 @@ public:
     {
         networkID = CBaseChainParams::TESTNET;
         strNetworkID = "test";
-        pchMessageStart[0] = 0x45;
-        pchMessageStart[1] = 0x76;
-        pchMessageStart[2] = 0x65;
-        pchMessageStart[3] = 0xba;
-        vAlertPubKey = ParseHex("000010e83b2703ccf322f7dbd62dd5855ac7c10bd055814ce121ba32607d573b8810c02c0582aed05b4deb9c4b77b26d92428c61256cd42774babea0a073b2ed0c9");
-        nDefaultPort = 51474;
+        pchMessageStart[0] = 0xb5;
+        pchMessageStart[1] = 0x2e;
+        pchMessageStart[2] = 0x9c;
+        pchMessageStart[3] = 0xf3;
+        // REPLACE: Generate your own testnet alert key pair (see doc/GENERATE-KEYS.md)
+        vAlertPubKey = ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        nDefaultPort = 46374;
         nEnforceBlockUpgradeMajority = 51;
         nRejectBlockOutdatedMajority = 75;
         nToCheckBlockUpgradeMajority = 100;
@@ -473,22 +477,24 @@ public:
         nMaturity = 15;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
-        nMaxMoneyOut = 43199500 * COIN;
+        nMaxMoneyOut = 33000000 * COIN;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
-        genesis.nTime = 1454124731;
-        genesis.nNonce = 2402015;
+        genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
+        genesis.nNonce = 0; // TODO: Re-mine testnet genesis block
 
         hashGenesisBlock = genesis.GetHash();
-        //assert(hashGenesisBlock == uint256("0x0000041e482b9b9691d98eefb48473405c0b8ec31b76df3797c74a78680ef818"));
+        // TODO: Update after mining testnet genesis
+        //assert(hashGenesisBlock == uint256("0xNEW_TESTNET_GENESIS_HASH"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("testnet-seed1.fairco.in", "testnet-seed2.fairco.in"));     // Testnet DNS Seeder
+        vSeeds.push_back(CDNSSeedData("testnet-seed1.fairco.in", "testnet-seed1.fairco.in"));
+        vSeeds.push_back(CDNSSeedData("testnet-seed2.fairco.in", "testnet-seed2.fairco.in"));
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 139); // Testnet faircoin addresses start with 'x' or 'y'
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 19);  // Testnet faircoin script addresses start with '8' or '9'
-        base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 239);     // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 65);  // Testnet addresses start with 'T'
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 12); // Testnet script addresses start with '5'
+        base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 193);    // 65 + 128
         // Testnet faircoin BIP32 pubkeys start with 'DRKV'
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x3a)(0x80)(0x61)(0xa0).convert_to_container<std::vector<unsigned char> >();
         // Testnet faircoin BIP32 prvkeys start with 'DRKP'
@@ -507,8 +513,9 @@ public:
         fTestnetToBeDeprecatedFieldRPC = true;
 
         nPoolMaxTransactions = 2;
-        strSporkKey = "04348C2F50F90267E64FACC65BFDC9D0EB147D090872FB97ABAE92E9A36E6CA60983E28E741F8E7277B11A7479B626AC115BA31463AC48178A5075C5A9319D4A38";
-        strObfuscationPoolDummyAddress = "y57cqfGRkekRyDRNeJiLtYVEbvhXrNbmox";
+        // REPLACE: Generate your own testnet spork key pair (see doc/GENERATE-KEYS.md)
+        strSporkKey = "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        strObfuscationPoolDummyAddress = "REPLACE_WITH_VALID_TESTNET_ADDRESS";
         nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
     }
     const Checkpoints::CCheckpointData& Checkpoints() const
@@ -541,13 +548,14 @@ public:
         nTargetTimespan = 24 * 60 * 60; // faircoin: 1 day
         nTargetSpacing = 1 * 60;        // faircoin: 1 minutes
         bnProofOfWorkLimit = ~uint256(0) >> 1;
-        genesis.nTime = 1454124731;
+        genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
         genesis.nBits = 0x207fffff;
-        genesis.nNonce = 12345;
+        genesis.nNonce = 0; // TODO: Re-mine regtest genesis block
 
         hashGenesisBlock = genesis.GetHash();
-        nDefaultPort = 51476;
-        //assert(hashGenesisBlock == uint256("0x4f023a2120d9127b21bbad01724fdb79b519f593f2a85b60d3d79160ec5f29df"));
+        nDefaultPort = 46376;
+        // TODO: Update after mining regtest genesis
+        //assert(hashGenesisBlock == uint256("0xNEW_REGTEST_GENESIS_HASH"));
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.
@@ -577,7 +585,7 @@ public:
     {
         networkID = CBaseChainParams::UNITTEST;
         strNetworkID = "unittest";
-        nDefaultPort = 51478;
+        nDefaultPort = 46378;
         vFixedSeeds.clear(); //! Unit test mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Unit test mode doesn't have any DNS seeds.
 

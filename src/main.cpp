@@ -68,7 +68,7 @@ bool fCheckBlockIndex = false;
 unsigned int nCoinCacheSize = 5000;
 bool fAlerts = DEFAULT_ALERTS;
 
-unsigned int nStakeMinAge = 60 * 60;
+unsigned int nStakeMinAge = 7200; // 2 hours
 int64_t nReserveBalance = 0;
 
 /** Fees smaller than this (in duffs) are considered zero fee (for relaying and mining)
@@ -1612,33 +1612,16 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 int64_t GetBlockValue(int nHeight)
 {
-    int64_t nSubsidy = 0;
+    if (nHeight == 0)
+        return 5000000 * COIN; // premine
 
-    if (nHeight == 0) {
-        nSubsidy = 47874447 * COIN;
-    } else if (nHeight <= 10000 && nHeight >= 1) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 13000 && nHeight >= 10001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 18000 && nHeight >= 13001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 21000 && nHeight >= 18001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 30000 && nHeight >= 21001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 40000 && nHeight >= 30001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 50000 && nHeight >= 40001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight <= 60000 && nHeight >= 50001) {
-        nSubsidy = 10 * COIN;
-	} else if (nHeight <= 70000 && nHeight >= 60001) {
-        nSubsidy = 10 * COIN;
-    } else if (nHeight >= 70001) {
-        nSubsidy = 10 * COIN;
-    } else {
-        nSubsidy = 0 * COIN;
-    }
+    int halvings = nHeight / 525600; // halving every ~2 years (2-min blocks)
+    int64_t nSubsidy = 10 * COIN;
+    nSubsidy >>= halvings;
+
+    if (nSubsidy < 125000000) // minimum 1.25 FAIR
+        nSubsidy = 125000000;
+
     return nSubsidy;
 }
 
@@ -1655,11 +1638,11 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
         ret = blockValue / 2;
     } else if (nHeight >= 9999999)  {
         int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
-        int64_t mNodeCoins = mnodeman.size() * 25000 * COIN;
+        int64_t mNodeCoins = mnodeman.size() * MASTER_NODE_AMOUNT * COIN;
 
         //if a mn count is inserted into the function we are looking for a specific result for a masternode count
         if(nMasternodeCount)
-            mNodeCoins = nMasternodeCount * 25000 * COIN;
+            mNodeCoins = nMasternodeCount * MASTER_NODE_AMOUNT * COIN;
 
         // Use this log to compare the masternode count for different clients
         LogPrintf("Adjusting seesaw at height %d with %d masternodes (without drift: %d) at %ld\n", nHeight, nMasternodeCount, nMasternodeCount - Params().MasternodeCountDrift(), GetTime());
@@ -3725,7 +3708,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
 
     if (!fLiteMode) {
         if (masternodeSync.RequestedMasternodeAssets > MASTERNODE_SYNC_LIST) {
-            obfuScationPool.NewBlock();
+            obfuscationPool.NewBlock();
             masternodePayments.ProcessBlock(GetHeight() + 10);
             budget.NewBlock();
         }
@@ -5141,7 +5124,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                 std::string strMessage = tx.GetHash().ToString() + boost::lexical_cast<std::string>(sigTime);
 
                 std::string errorMessage = "";
-                if (!obfuScationSigner.VerifyMessage(pmn->pubKeyMasternode, vchSig, strMessage, errorMessage)) {
+                if (!obfuscationSigner.VerifyMessage(pmn->pubKeyMasternode, vchSig, strMessage, errorMessage)) {
                     LogPrintf("dstx: Got bad masternode address signature %s \n", vin.ToString());
                     //pfrom->Misbehaving(20);
                     return false;
@@ -5576,7 +5559,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
     } else {
         //probably one the extensions
-        obfuScationPool.ProcessMessageObfuscation(pfrom, strCommand, vRecv);
+        obfuscationPool.ProcessMessageObfuscation(pfrom, strCommand, vRecv);
         mnodeman.ProcessMessage(pfrom, strCommand, vRecv);
         budget.ProcessMessage(pfrom, strCommand, vRecv);
         masternodePayments.ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
