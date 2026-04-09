@@ -30,7 +30,7 @@
 | **Consensus** | PoW + PoS Hybrid |
 | **Block Time** | 120 seconds |
 | **Max Supply** | 33,000,000 FAIR |
-| **Premine** | 5,000,000 FAIR (15.15%) |
+| **Premine** | 5,000,000 FAIR (block 1) |
 | **Masternode Collateral** | 5,000 FAIR |
 | **Stake Min Age** | 2 hours |
 | **Address Prefix** | `F` (mainnet) / `T` (testnet) |
@@ -39,7 +39,8 @@
 
 | Phase | Blocks | Reward | Duration |
 |---|---|---|---|
-| PoW Mining | 1 &ndash; 10,000 | 10 FAIR | ~14 days |
+| Premine | 1 | 5,000,000 FAIR | Instant |
+| PoW Mining | 2 &ndash; 10,000 | 10 FAIR | ~14 days |
 | PoS Staking | 10,001 &ndash; 525,599 | 10 FAIR | ~2 years |
 | 1st Halving | 525,600 &ndash; 1,051,199 | 5 FAIR | ~2 years |
 | 2nd Halving | 1,051,200 &ndash; 1,576,799 | 2.5 FAIR | ~2 years |

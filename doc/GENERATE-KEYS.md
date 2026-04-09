@@ -1,181 +1,151 @@
 # How to Generate Cryptographic Keys for FairCoin
 
 This guide explains how to generate the cryptographic key pairs needed before launching
-the FairCoin network. **Do this on a secure, offline computer.**
+the FairCoin network. **Do this on a secure computer you trust.**
 
 ## Prerequisites
 
 ```bash
-sudo apt-get install openssl
+sudo apt-get install openssl python3
 ```
 
-## Keys You Need to Generate
+## Keys You Need
 
-You need **3 key pairs** (minimum) for mainnet, and optionally 2 more for testnet:
+You need **3 key pairs** for mainnet:
 
-| Key | Purpose | File Location |
-|-----|---------|---------------|
-| **Alert Key** | Broadcast emergency alerts to all nodes | `src/chainparams.cpp` → `vAlertPubKey` |
-| **Spork Key** | Enable/disable features remotely (sporks) | `src/chainparams.cpp` → `strSporkKey` |
-| **Genesis Key** | Receives the premine (5,000,000 FAIR) | `src/chainparams.cpp` → genesis `scriptPubKey` |
-| Testnet Alert Key | Same as Alert Key, but for testnet | `src/chainparams.cpp` → testnet `vAlertPubKey` |
-| Testnet Spork Key | Same as Spork Key, but for testnet | `src/chainparams.cpp` → testnet `strSporkKey` |
+| Key | Purpose |
+|---|---|
+| **Alert Key** | Broadcast emergency alerts to all nodes |
+| **Spork Key** | Enable/disable features remotely (sporks) |
+| **Genesis Key** | Signs the genesis block coinbase output |
 
-## Step 1: Generate a Key Pair
+> **Important**: In FairCoin, the premine (5,000,000 FAIR) is paid in **block 1**, not block 0.
+> This means **anyone who mines block 1 receives the premine** automatically to their wallet.
+> The genesis key is only used to sign the unspendable genesis coinbase, not to receive funds.
 
-Run this command for each key you need:
+## Step 1: Generate All 3 Key Pairs
 
 ```bash
-openssl ecparam -genkey -name secp256k1 -out key.pem
-openssl ec -in key.pem -text -noout
+mkdir -p ~/MIS_CLAVES_FAIRCOIN
+
+openssl ecparam -genkey -name secp256k1 | openssl ec -text -noout 2>/dev/null > ~/MIS_CLAVES_FAIRCOIN/alert_key.txt
+openssl ecparam -genkey -name secp256k1 | openssl ec -text -noout 2>/dev/null > ~/MIS_CLAVES_FAIRCOIN/spork_key.txt
+openssl ecparam -genkey -name secp256k1 | openssl ec -text -noout 2>/dev/null > ~/MIS_CLAVES_FAIRCOIN/genesis_key.txt
 ```
 
-This outputs something like:
-
-```
-read EC key
-Private-Key: (256 bit)
-priv:
-    00:a1:b2:c3:d4:e5:f6:...  (32 bytes)
-pub:
-    04:aa:bb:cc:dd:ee:ff:...  (65 bytes, starting with 04)
-ASN1 OID: secp256k1
-```
-
-## Step 2: Extract the Public Key (hex)
-
-The public key is the `pub:` section. Remove all colons and whitespace to get a
-130-character hex string starting with `04`.
-
-Example:
-```
-pub:
-    04:c1:0e:83:b2:70:3c:cf:32:2f:7d:bd:62:dd:58:
-    55:ac:7c:10:bd:05:58:14:ce:12:1b:a3:26:07:d5:
-    73:b8:81:0c:02:c0:58:2a:ed:05:b4:de:b9:c4:b7:
-    7b:26:d9:24:28:c6:12:56:cd:42:77:4b:ab:ea:0a:
-    07:3b:2e:d0:c9
-```
-
-Becomes:
-```
-04c10e83b2703ccf322f7dbd62dd5855ac7c10bd055814ce121ba32607d573b8810c02c0582aed05b4deb9c4b77b26d92428c61256cd42774babea0a073b2ed0c9
-```
-
-## Step 3: Extract the Private Key (hex)
-
-The private key is the `priv:` section. Remove colons, whitespace, and any leading `00:`.
-This gives you a 64-character hex string.
-
-**KEEP THIS SECRET. NEVER COMMIT IT TO THE REPOSITORY.**
-
-## Step 4: Put Public Keys in the Code
-
-Edit `src/chainparams.cpp` and replace the placeholder values:
-
-### Alert Key (mainnet)
-Find this line:
-```cpp
-vAlertPubKey = ParseHex("0400000000000000000000000000000000...");
-```
-Replace the hex string with your **Alert public key**.
-
-### Spork Key (mainnet)
-Find this line:
-```cpp
-strSporkKey = "0400000000000000000000000000000000...";
-```
-Replace with your **Spork public key**.
-
-### Genesis Key (mainnet)
-Find this line in the genesis block section:
-```cpp
-txNew.vout[0].scriptPubKey = CScript() << ParseHex("0400000000000000...") << OP_CHECKSIG;
-```
-Replace with your **Genesis public key**. This address will receive the premine.
-
-### Testnet Keys
-Do the same for the testnet section (look for the `CTestNetParams` class).
-
-## Step 5: Store Private Keys Securely
-
-For each private key, store it in a **secure, offline location**:
-
-- **Alert private key**: Needed to send network-wide alert messages
-- **Spork private key**: Needed to activate/deactivate network features
-- **Genesis private key**: Needed to spend the 5,000,000 FAIR premine
-
-Recommended storage:
-- Password manager (KeePass, 1Password, etc.)
-- Encrypted USB drive
-- Paper in a safe
-- **NEVER** on a server connected to the internet
-- **NEVER** in the source code repository
-
-## Step 6: Generate the Obfuscation Pool Dummy Address
-
-After building FairCoin with your new keys, generate a valid FairCoin address:
+## Step 2: Extract Public Keys
 
 ```bash
-./faircoind -daemon
-./faircoin-cli getnewaddress
+echo "=== ALERT ==="
+grep -A 5 "pub:" ~/MIS_CLAVES_FAIRCOIN/alert_key.txt | tail -n +2 | tr -d ' :\n' | head -c 130
+echo ""
+echo "=== SPORK ==="
+grep -A 5 "pub:" ~/MIS_CLAVES_FAIRCOIN/spork_key.txt | tail -n +2 | tr -d ' :\n' | head -c 130
+echo ""
+echo "=== GENESIS ==="
+grep -A 5 "pub:" ~/MIS_CLAVES_FAIRCOIN/genesis_key.txt | tail -n +2 | tr -d ' :\n' | head -c 130
+echo ""
 ```
 
-Use this address for `strObfuscationPoolDummyAddress` in `src/chainparams.cpp`.
+Each output is a 130-character hex string starting with `04`. These are your public keys.
 
-## Step 7: Re-mine the Genesis Block
+## Step 3: Put Public Keys in the Code
 
-After updating all keys and parameters, you need to re-mine the genesis block.
-The current genesis nonce is set to 0 (placeholder). You need to find a valid nonce.
-
-Add this temporary code in `CMainParams()` constructor, right after `hashGenesisBlock = genesis.GetHash();`:
+Edit `src/chainparams.cpp` and replace these 3 lines in the `CMainParams` class:
 
 ```cpp
-if (true) {
-    printf("Searching for genesis block...\n");
+// Line ~375 - Alert Key
+vAlertPubKey = ParseHex("YOUR_ALERT_PUBLIC_KEY");
+
+// Line ~398 - Genesis Key (signs coinbase)
+txNew.vout[0].scriptPubKey = CScript() << ParseHex("YOUR_GENESIS_PUBLIC_KEY") << OP_CHECKSIG;
+
+// Line ~437 - Spork Key
+strSporkKey = "YOUR_SPORK_PUBLIC_KEY";
+```
+
+Do the same for the `CTestNetParams` class (testnet) if you want. You can reuse the same
+keys for mainnet and testnet, or generate separate ones.
+
+## Step 4: Re-mine the Genesis Block
+
+Changing the genesis public key changes the merkle root, which invalidates the old nonce
+and hash. You need to mine new genesis blocks.
+
+Temporarily replace the 3 assert lines in chainparams.cpp (for mainnet, testnet, regtest)
+with mining code:
+
+```cpp
+genesis.nNonce = 0;
+hashGenesisBlock = genesis.GetHash();
+{
     uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
-    while (genesis.GetHash() > hashTarget) {
+    while (hashGenesisBlock > hashTarget) {
         ++genesis.nNonce;
-        if (genesis.nNonce == 0) {
-            printf("NONCE WRAPPED, incrementing time\n");
-            ++genesis.nTime;
-        }
-        if (genesis.nNonce % 100000 == 0)
-            printf("nonce %08u: hash = %s (target = %s)\n",
-                genesis.nNonce, genesis.GetHash().ToString().c_str(),
-                hashTarget.ToString().c_str());
+        hashGenesisBlock = genesis.GetHash();
     }
-    printf("GENESIS BLOCK FOUND!\n");
-    printf("nonce: %u\n", genesis.nNonce);
-    printf("hash: %s\n", genesis.GetHash().ToString().c_str());
-    printf("merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
+    printf("nonce=%u hash=%s merkle=%s\n",
+        genesis.nNonce, hashGenesisBlock.ToString().c_str(),
+        genesis.hashMerkleRoot.ToString().c_str());
 }
 ```
 
-After finding the nonce:
-1. Update `genesis.nNonce` with the found value
-2. Uncomment and update the `assert(hashGenesisBlock == ...)` line
-3. Update `assert(genesis.hashMerkleRoot == ...)` line
-4. Remove the temporary mining code
-5. Do the same for testnet and regtest genesis blocks
+Then:
 
-## Quick Reference: What Goes Where
+```bash
+touch src/chainparams.cpp
+make -j$(nproc)
+./src/faircoind
+```
 
+It will print the new nonce, hash, and merkle root. Copy those values and replace the
+mining code with proper asserts:
+
+```cpp
+genesis.nNonce = YOUR_NEW_NONCE;
+hashGenesisBlock = genesis.GetHash();
+assert(hashGenesisBlock == uint256("0xYOUR_NEW_HASH"));
+assert(genesis.hashMerkleRoot == uint256("0xYOUR_NEW_MERKLE"));
 ```
-src/chainparams.cpp:
-  Line ~375  vAlertPubKey        = YOUR_ALERT_PUBLIC_KEY
-  Line ~398  scriptPubKey        = YOUR_GENESIS_PUBLIC_KEY
-  Line ~437  strSporkKey         = YOUR_SPORK_PUBLIC_KEY
-  Line ~439  strObfuscationPool  = YOUR_FAIRCOIN_ADDRESS
-  Line ~464  vAlertPubKey (test) = YOUR_TESTNET_ALERT_PUBLIC_KEY
-  Line ~510  strSporkKey (test)  = YOUR_TESTNET_SPORK_PUBLIC_KEY
+
+Also update the 3 checkpoint entries at the top of `chainparams.cpp` with the new genesis
+hashes.
+
+## Step 5: Store Private Keys Securely
+
+The private keys are in `~/MIS_CLAVES_FAIRCOIN/`. **Copy this folder to a safe location**:
+
+- USB drive (encrypted)
+- Password manager (KeePass, 1Password)
+- Paper backup in a safe
+- **NEVER** in the git repository
+- **NEVER** in a cloud service unencrypted
+
+If you lose the private keys, you lose:
+- **Alert private key**: Cannot broadcast emergency network alerts
+- **Spork private key**: Cannot activate/deactivate network features
+- **Genesis private key**: Not critical - the genesis coinbase is unspendable anyway
+
+## Receiving the Premine
+
+Since the premine is paid in block 1 via `GetBlockValue()`, the wallet that mines block 1
+automatically receives 5,000,000 FAIR. Just start mining on a fresh network:
+
+```bash
+./src/faircoind -daemon
+./src/faircoin-cli setgenerate true 16
+./src/faircoin-cli getbalance
 ```
+
+After block 1 has 6 confirmations (maturity), you'll see 5,000,000 FAIR in your balance.
 
 ## Security Checklist
 
-- [ ] Generated keys on an offline/air-gapped machine
-- [ ] Private keys stored in at least 2 separate secure locations
-- [ ] Private keys are NOT in the source code or any git-tracked file
-- [ ] Genesis block re-mined with new parameters
-- [ ] Temporary mining code removed before release
-- [ ] All placeholder values replaced with real keys
+- [ ] Keys generated with openssl on a trusted machine
+- [ ] Private keys copied to at least 2 secure locations
+- [ ] Private keys are NOT in the source code or git
+- [ ] Public keys pasted in `src/chainparams.cpp`
+- [ ] Genesis block re-mined with new values
+- [ ] `src/chainparams.cpp` asserts updated with final hashes
+- [ ] Checkpoints updated with final hashes
+- [ ] Code compiles and daemon starts without asserts failing
