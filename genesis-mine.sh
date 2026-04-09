@@ -36,15 +36,17 @@ echo ""
 install_deps() {
     if command -v apt-get &>/dev/null; then
         sudo apt-get update -qq
+        # Try libdb4.8 first (preferred for portable wallets)
         sudo apt-get install -y -qq \
             python3 build-essential libtool autotools-dev autoconf \
-            pkg-config libssl-dev libboost-all-dev \
-            libdb4.8-dev libdb4.8++-dev 2>/dev/null || \
-        sudo apt-get install -y -qq \
-            python3 build-essential libtool autotools-dev autoconf \
-            pkg-config libssl-dev libboost-all-dev \
-            libdb5.3-dev libdb5.3++-dev 2>/dev/null
-        sudo apt-get install -y -qq libminiupnpc-dev libzmq3-dev 2>/dev/null || true
+            pkg-config libssl-dev libboost-all-dev 2>/dev/null
+        # Try db4.8, fall back to db5.3
+        if ! sudo apt-get install -y -qq libdb4.8-dev libdb4.8++-dev 2>/dev/null; then
+            echo "  libdb4.8 not available, installing libdb5.3 (will use --with-incompatible-bdb)"
+            sudo apt-get install -y -qq libdb5.3-dev libdb5.3++-dev 2>/dev/null || true
+            USE_INCOMPATIBLE_BDB=1
+        fi
+        sudo apt-get install -y -qq libminiupnpc-dev libzmq3-dev libevent-dev 2>/dev/null || true
         echo "  Dependencies installed."
     elif command -v dnf &>/dev/null; then
         sudo dnf install -y python3 gcc-c++ libtool autoconf automake \
@@ -395,11 +397,17 @@ fi
 
 if [ ! -f Makefile ]; then
     echo "  Running configure..."
-    ./configure
+    CONFIGURE_FLAGS=""
+    if [ "${USE_INCOMPATIBLE_BDB:-0}" = "1" ]; then
+        echo "  (using --with-incompatible-bdb for Berkeley DB 5.3+)"
+        CONFIGURE_FLAGS="--with-incompatible-bdb"
+    fi
+    # Try without GUI first for faster build; add --with-gui=qt5 if you want the GUI
+    ./configure $CONFIGURE_FLAGS --without-gui 2>&1 | tail -3
 fi
 
-echo "  Running make..."
-make -j$(nproc) 2>&1 | tail -5
+echo "  Running make (this may take several minutes)..."
+make -j$(nproc) 2>&1 | tail -10
 
 # Cleanup
 rm -f /tmp/faircoin_genesis_miner.py /tmp/faircoin_genesis_results.txt
