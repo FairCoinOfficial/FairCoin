@@ -331,7 +331,7 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 //    timestamp before)
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
-    boost::assign::map_list_of(0, uint256("0x0"));
+    boost::assign::map_list_of(0, uint256("0x00000adfe668f8cbcd785460d3c7c13fd51b7039b5978a1457208baf4a050ab3"));
 static const Checkpoints::CCheckpointData mainCheckpointData = {
     &mapCheckpoints,
     1744156800, // April 9, 2026 00:00:00 UTC
@@ -340,7 +340,7 @@ static const Checkpoints::CCheckpointData mainCheckpointData = {
 };
 
 static Checkpoints::MapCheckpoints mapCheckpointsTestnet =
-    boost::assign::map_list_of(0, uint256("0x0"));
+    boost::assign::map_list_of(0, uint256("0x00000adfe668f8cbcd785460d3c7c13fd51b7039b5978a1457208baf4a050ab3"));
 static const Checkpoints::CCheckpointData dataTestnet = {
     &mapCheckpointsTestnet,
     1744156800,
@@ -348,7 +348,7 @@ static const Checkpoints::CCheckpointData dataTestnet = {
     0};
 
 static Checkpoints::MapCheckpoints mapCheckpointsRegtest =
-    boost::assign::map_list_of(0, uint256("0x0"));
+    boost::assign::map_list_of(0, uint256("0x56bdc72a8ab8f6bb4af993b871bacb219b7db4a356c2161ac370099a9aeef834"));
 static const Checkpoints::CCheckpointData dataRegtest = {
     &mapCheckpointsRegtest,
     1744156800,
@@ -401,19 +401,12 @@ public:
         genesis.nVersion = 1;
         genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
         genesis.nBits = 0x1e0ffff0;
-        genesis.nNonce = 0;
+        genesis.nNonce = 972219;
 
         hashGenesisBlock = genesis.GetHash();
 
-        // Temporary genesis mining - remove after finding correct values
-        {
-            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
-            while (hashGenesisBlock > hashTarget) {
-                ++genesis.nNonce;
-                hashGenesisBlock = genesis.GetHash();
-            }
-            printf("MAINNET nonce=%u hash=%s merkle=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
-        }
+        assert(hashGenesisBlock == uint256("0x00000adfe668f8cbcd785460d3c7c13fd51b7039b5978a1457208baf4a050ab3"));
+        assert(genesis.hashMerkleRoot == uint256("0x71440358b77f018ac9f22c7175d5e2c9ec280dd84ac7a05e8bf40e52be87774f"));
 
         vSeeds.push_back(CDNSSeedData("seed1.fairco.in", "seed1.fairco.in"));
         vSeeds.push_back(CDNSSeedData("seed2.fairco.in", "seed2.fairco.in"));
@@ -482,17 +475,10 @@ public:
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
-        genesis.nNonce = 0;
+        genesis.nNonce = 972219;
 
         hashGenesisBlock = genesis.GetHash();
-        {
-            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
-            while (hashGenesisBlock > hashTarget) {
-                ++genesis.nNonce;
-                hashGenesisBlock = genesis.GetHash();
-            }
-            printf("TESTNET nonce=%u hash=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str());
-        }
+        assert(hashGenesisBlock == uint256("0x00000adfe668f8cbcd785460d3c7c13fd51b7039b5978a1457208baf4a050ab3"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -560,14 +546,7 @@ public:
 
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 46376;
-        {
-            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
-            while (hashGenesisBlock > hashTarget) {
-                ++genesis.nNonce;
-                hashGenesisBlock = genesis.GetHash();
-            }
-            printf("REGTEST nonce=%u hash=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str());
-        }
+        assert(hashGenesisBlock == uint256("0x56bdc72a8ab8f6bb4af993b871bacb219b7db4a356c2161ac370099a9aeef834"));
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.
