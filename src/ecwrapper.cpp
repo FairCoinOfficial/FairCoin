@@ -18,7 +18,7 @@ namespace
  * recid selects which key is recovered
  * if check is non-zero, additional checks are performed
  */
-int ECDSA_SIG_recover_key_GFp(EC_KEY* eckey, ECDSA_SIG* ecsig, const unsigned char* msg, int msglen, int recid, int check)
+int ECDSA_SIG_recover_key_GFp(EC_KEY* eckey, const ECDSA_SIG* ecsig, const unsigned char* msg, int msglen, int recid, int check)
 {
     if (!eckey) return 0;
 
@@ -38,6 +38,10 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY* eckey, ECDSA_SIG* ecsig, const unsigned ch
     BIGNUM* zero = NULL;
     int n = 0;
     int i = recid / 2;
+
+    const BIGNUM* sig_r = NULL;
+    const BIGNUM* sig_s = NULL;
+    ECDSA_SIG_get0(ecsig, &sig_r, &sig_s);
 
     const EC_GROUP* group = EC_KEY_get0_group(eckey);
     if ((ctx = BN_CTX_new()) == NULL) {
@@ -59,7 +63,7 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY* eckey, ECDSA_SIG* ecsig, const unsigned ch
         ret = -1;
         goto err;
     }
-    if (!BN_add(x, x, ecsig->r)) {
+    if (!BN_add(x, x, sig_r)) {
         ret = -1;
         goto err;
     }
@@ -106,21 +110,18 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY* eckey, ECDSA_SIG* ecsig, const unsigned ch
     }
     if (8 * msglen > n) BN_rshift(e, e, 8 - (n & 7));
     zero = BN_CTX_get(ctx);
-    if (!BN_zero(zero)) {
-        ret = -1;
-        goto err;
-    }
+    BN_zero(zero);
     if (!BN_mod_sub(e, zero, e, order, ctx)) {
         ret = -1;
         goto err;
     }
     rr = BN_CTX_get(ctx);
-    if (!BN_mod_inverse(rr, ecsig->r, order, ctx)) {
+    if (!BN_mod_inverse(rr, sig_r, order, ctx)) {
         ret = -1;
         goto err;
     }
     sor = BN_CTX_get(ctx);
-    if (!BN_mod_mul(sor, ecsig->s, rr, order, ctx)) {
+    if (!BN_mod_mul(sor, sig_s, rr, order, ctx)) {
         ret = -1;
         goto err;
     }
@@ -218,8 +219,11 @@ bool CECKey::Recover(const uint256& hash, const unsigned char* p64, int rec)
     if (rec < 0 || rec >= 3)
         return false;
     ECDSA_SIG* sig = ECDSA_SIG_new();
-    BN_bin2bn(&p64[0], 32, sig->r);
-    BN_bin2bn(&p64[32], 32, sig->s);
+    BIGNUM* sig_r = BN_new();
+    BIGNUM* sig_s = BN_new();
+    BN_bin2bn(&p64[0], 32, sig_r);
+    BN_bin2bn(&p64[32], 32, sig_s);
+    ECDSA_SIG_set0(sig, sig_r, sig_s); // transfers ownership of sig_r, sig_s
     bool ret = ECDSA_SIG_recover_key_GFp(pkey, sig, (unsigned char*)&hash, sizeof(hash), rec, 0) == 1;
     ECDSA_SIG_free(sig);
     return ret;
@@ -234,15 +238,15 @@ bool CECKey::TweakPublic(const unsigned char vchTweak[32])
     BIGNUM* bnOrder = BN_CTX_get(ctx);
     BIGNUM* bnOne = BN_CTX_get(ctx);
     const EC_GROUP* group = EC_KEY_get0_group(pkey);
-    EC_GROUP_get_order(group, bnOrder, ctx); // what a grossly inefficient way to get the (constant) group order...
+    EC_GROUP_get_order(group, bnOrder, ctx);
     BN_bin2bn(vchTweak, 32, bnTweak);
     if (BN_cmp(bnTweak, bnOrder) >= 0)
-        ret = false; // extremely unlikely
+        ret = false;
     EC_POINT* point = EC_POINT_dup(EC_KEY_get0_public_key(pkey), group);
     BN_one(bnOne);
     EC_POINT_mul(group, point, bnTweak, point, bnOne, ctx);
     if (EC_POINT_is_at_infinity(group, point))
-        ret = false; // ridiculously unlikely
+        ret = false;
     EC_KEY_set_public_key(pkey, point);
     EC_POINT_free(point);
     BN_CTX_end(ctx);
@@ -256,7 +260,5 @@ bool CECKey::SanityCheck()
     if (pkey == NULL)
         return false;
     EC_KEY_free(pkey);
-
-    // TODO Is there more EC functionality that could be missing?
     return true;
 }
