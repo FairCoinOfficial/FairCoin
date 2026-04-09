@@ -107,8 +107,24 @@ AC_DEFUN([AX_BOOST_SYSTEM],
                   done
 
             fi
+            dnl Boost >= 1.69 makes Boost.System header-only; no library needed.
             if test "x$ax_lib" = "x"; then
-                AC_MSG_ERROR(Could not find a version of the boost_system library!)
+                AC_LANG_PUSH([C++])
+                CXXFLAGS_SAVE=$CXXFLAGS
+                LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+                CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS"
+                AC_MSG_CHECKING([whether Boost::System is header-only])
+                AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                    [[@%:@include <boost/system/error_code.hpp>]],
+                    [[boost::system::error_code ec; ec.value();]])],
+                    [AC_MSG_RESULT([yes])
+                     BOOST_SYSTEM_LIB=""
+                     AC_SUBST(BOOST_SYSTEM_LIB)
+                     link_system="yes"],
+                    [AC_MSG_RESULT([no])
+                     AC_MSG_ERROR([Could not find a version of the boost_system library!])])
+                CXXFLAGS=$CXXFLAGS_SAVE
+                AC_LANG_POP([C++])
             fi
 			if test "x$link_system" = "xno"; then
 				AC_MSG_ERROR(Could not link against $ax_lib !)
