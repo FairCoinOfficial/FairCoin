@@ -120,19 +120,19 @@ jobs:
       - name: Build depends for Windows
         run: |
           cd depends
-          make HOST=x86_64-w64-mingw32 NO_QT=1 -j$(nproc)
+          make HOST=x86_64-w64-mingw32 -j$(nproc)
 
       - name: Build FairCoin for Windows
         run: |
           ./autogen.sh
-          CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --without-gui --disable-zmq
+          CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --disable-zmq
           make -j$(nproc)
-          x86_64-w64-mingw32-strip src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe
+          x86_64-w64-mingw32-strip src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe
 
       - name: Package Windows ZIP
         run: |
           mkdir -p faircoin-${{ github.ref_name }}-windows-x86_64
-          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe faircoin-${{ github.ref_name }}-windows-x86_64/
+          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe faircoin-${{ github.ref_name }}-windows-x86_64/
           cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-windows-x86_64/
           zip -r faircoin-${{ github.ref_name }}-windows-x86_64.zip faircoin-${{ github.ref_name }}-windows-x86_64/
 
