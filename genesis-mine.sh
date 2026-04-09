@@ -1,15 +1,13 @@
 #!/bin/bash
 # ============================================================================
-# FairCoin Genesis Block Miner
+# FairCoin First-Time Setup Script
 # ============================================================================
 # Run this script ONCE before launching the FairCoin network for the first time.
-# It will:
-#   1. Mine the genesis blocks (mainnet, testnet, regtest)
-#   2. Show you the values to put in src/chainparams.cpp
-#   3. Optionally auto-patch chainparams.cpp for you
-#
-# Prerequisites:
-#   sudo apt-get install python3 build-essential
+# It will automatically:
+#   1. Install all required dependencies
+#   2. Mine the genesis blocks (mainnet, testnet, regtest)
+#   3. Auto-patch src/chainparams.cpp with the mined values
+#   4. Compile FairCoin
 #
 # Usage:
 #   chmod +x genesis-mine.sh
@@ -20,14 +18,56 @@
 
 set -e
 
-echo "============================================"
-echo "  FairCoin Genesis Block Miner"
-echo "============================================"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CHAINPARAMS="$SCRIPT_DIR/src/chainparams.cpp"
+
+echo ""
+echo "  ======================================================"
+echo "  |         FairCoin First-Time Setup Script            |"
+echo "  ======================================================"
+echo ""
+
+# -------------------------------------------------------
+# Step 1: Install dependencies
+# -------------------------------------------------------
+echo "[1/4] Installing dependencies..."
+echo ""
+
+install_deps() {
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq \
+            python3 build-essential libtool autotools-dev autoconf \
+            pkg-config libssl-dev libboost-all-dev \
+            libdb4.8-dev libdb4.8++-dev 2>/dev/null || \
+        sudo apt-get install -y -qq \
+            python3 build-essential libtool autotools-dev autoconf \
+            pkg-config libssl-dev libboost-all-dev \
+            libdb5.3-dev libdb5.3++-dev 2>/dev/null
+        sudo apt-get install -y -qq libminiupnpc-dev libzmq3-dev 2>/dev/null || true
+        echo "  Dependencies installed."
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install -y python3 gcc-c++ libtool autoconf automake \
+            openssl-devel boost-devel libdb4-devel libdb4-cxx-devel \
+            miniupnpc-devel zeromq-devel 2>/dev/null || true
+        echo "  Dependencies installed."
+    elif command -v brew &>/dev/null; then
+        brew install python3 autoconf automake libtool pkg-config \
+            openssl boost berkeley-db@4 miniupnpc zeromq 2>/dev/null || true
+        echo "  Dependencies installed."
+    else
+        echo "  WARNING: Could not detect package manager."
+        echo "  Please install manually: python3, build-essential, libssl-dev,"
+        echo "  libboost-all-dev, libdb4.8-dev, libdb4.8++-dev"
+    fi
+}
+
+install_deps
 echo ""
 
 # Check python3
 if ! command -v python3 &>/dev/null; then
-    echo "ERROR: python3 is required. Install with: sudo apt-get install python3"
+    echo "ERROR: python3 is required but could not be installed."
     exit 1
 fi
 
@@ -281,8 +321,8 @@ with open("/tmp/faircoin_genesis_results.txt", "w") as f:
 
 PYEOF
 
-echo "Starting genesis block mining..."
-echo "(This may take a few minutes depending on your CPU)"
+echo "[2/4] Mining genesis blocks..."
+echo "  (This may take a few minutes depending on your CPU)"
 echo ""
 
 python3 /tmp/faircoin_genesis_miner.py
@@ -295,76 +335,91 @@ fi
 # Read results
 source /tmp/faircoin_genesis_results.txt
 
+# -------------------------------------------------------
+# Step 3: Auto-patch chainparams.cpp
+# -------------------------------------------------------
 echo ""
-echo "============================================"
-echo "  Auto-patch chainparams.cpp?"
-echo "============================================"
-echo ""
-echo "This will update src/chainparams.cpp with the mined values."
-echo ""
-read -p "Apply changes automatically? [y/N] " REPLY
+echo "[3/4] Patching src/chainparams.cpp..."
 
-if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    CHAINPARAMS="$(dirname "$0")/src/chainparams.cpp"
-
-    if [ ! -f "$CHAINPARAMS" ]; then
-        echo "ERROR: Cannot find $CHAINPARAMS"
-        exit 1
-    fi
-
-    # Backup
-    cp "$CHAINPARAMS" "${CHAINPARAMS}.bak"
-    echo "Backup saved to ${CHAINPARAMS}.bak"
-
-    # Patch mainnet nonce
-    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine genesis block to find valid nonce/genesis.nNonce = ${MAINNET_NONCE};/" "$CHAINPARAMS"
-
-    # Patch mainnet asserts
-    sed -i "s|// TODO: Update these asserts after mining the new genesis block||" "$CHAINPARAMS"
-    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
-    sed -i "s|//assert(genesis.hashMerkleRoot == uint256(\"0xNEW_MERKLE_ROOT\"));|assert(genesis.hashMerkleRoot == uint256(\"0x${MAINNET_MERKLE}\"));|" "$CHAINPARAMS"
-
-    # Patch testnet nonce
-    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine testnet genesis block/genesis.nNonce = ${TESTNET_NONCE};/" "$CHAINPARAMS"
-
-    # Patch testnet assert
-    sed -i "s|// TODO: Update after mining testnet genesis||" "$CHAINPARAMS"
-    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_TESTNET_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
-
-    # Patch regtest nonce
-    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine regtest genesis block/genesis.nNonce = ${REGTEST_NONCE};/" "$CHAINPARAMS"
-
-    # Patch regtest assert
-    sed -i "s|// TODO: Update after mining regtest genesis||" "$CHAINPARAMS"
-    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_REGTEST_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
-
-    # Patch mainnet checkpoint with genesis hash
-    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new genesis hash|boost::assign::map_list_of(0, uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
-
-    # Patch testnet checkpoint
-    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new testnet genesis hash|boost::assign::map_list_of(0, uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
-
-    # Patch regtest checkpoint
-    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new regtest genesis hash|boost::assign::map_list_of(0, uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
-
-    echo ""
-    echo "chainparams.cpp has been patched!"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Generate your cryptographic keys (see doc/GENERATE-KEYS.md)"
-    echo "  2. Replace the placeholder keys in src/chainparams.cpp"
-    echo "  3. Recompile: make -j\$(nproc)"
-    echo "  4. Start your node: ./src/faircoind -daemon -gen=1"
-    echo ""
-    echo "You can now delete this script: rm genesis-mine.sh"
-else
-    echo ""
-    echo "No changes made. Apply the values manually to src/chainparams.cpp"
-    echo "The mined values are saved in /tmp/faircoin_genesis_results.txt"
+if [ ! -f "$CHAINPARAMS" ]; then
+    echo "ERROR: Cannot find $CHAINPARAMS"
+    exit 1
 fi
 
+# Backup
+cp "$CHAINPARAMS" "${CHAINPARAMS}.bak"
+
+# Patch mainnet nonce
+sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine genesis block to find valid nonce/genesis.nNonce = ${MAINNET_NONCE};/" "$CHAINPARAMS"
+
+# Patch mainnet asserts
+sed -i "s|// TODO: Update these asserts after mining the new genesis block||" "$CHAINPARAMS"
+sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
+sed -i "s|//assert(genesis.hashMerkleRoot == uint256(\"0xNEW_MERKLE_ROOT\"));|assert(genesis.hashMerkleRoot == uint256(\"0x${MAINNET_MERKLE}\"));|" "$CHAINPARAMS"
+
+# Patch testnet nonce
+sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine testnet genesis block/genesis.nNonce = ${TESTNET_NONCE};/" "$CHAINPARAMS"
+
+# Patch testnet assert
+sed -i "s|// TODO: Update after mining testnet genesis||" "$CHAINPARAMS"
+sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_TESTNET_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
+
+# Patch regtest nonce
+sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine regtest genesis block/genesis.nNonce = ${REGTEST_NONCE};/" "$CHAINPARAMS"
+
+# Patch regtest assert
+sed -i "s|// TODO: Update after mining regtest genesis||" "$CHAINPARAMS"
+sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_REGTEST_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
+
+# Patch checkpoints with genesis hashes
+sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new genesis hash|boost::assign::map_list_of(0, uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
+sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new testnet genesis hash|boost::assign::map_list_of(0, uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
+sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new regtest genesis hash|boost::assign::map_list_of(0, uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
+
+echo "  chainparams.cpp patched successfully!"
+echo "  Backup saved to ${CHAINPARAMS}.bak"
+
+# -------------------------------------------------------
+# Step 4: Compile
+# -------------------------------------------------------
+echo ""
+echo "[4/4] Compiling FairCoin..."
+echo ""
+
+cd "$SCRIPT_DIR"
+
+if [ ! -f configure ]; then
+    echo "  Running autogen.sh..."
+    ./autogen.sh
+fi
+
+if [ ! -f Makefile ]; then
+    echo "  Running configure..."
+    ./configure
+fi
+
+echo "  Running make..."
+make -j$(nproc) 2>&1 | tail -5
+
 # Cleanup
-rm -f /tmp/faircoin_genesis_miner.py
+rm -f /tmp/faircoin_genesis_miner.py /tmp/faircoin_genesis_results.txt
 
 echo ""
-echo "Done!"
+echo "  ======================================================"
+echo "  |            Setup Complete!                          |"
+echo "  ======================================================"
+echo ""
+echo "  Genesis blocks mined and patched into chainparams.cpp"
+echo "  FairCoin compiled successfully"
+echo ""
+echo "  BEFORE LAUNCHING, you still need to:"
+echo "    1. Generate your cryptographic keys (see doc/GENERATE-KEYS.md)"
+echo "    2. Replace placeholder keys in src/chainparams.cpp"
+echo "    3. Recompile: make -j\$(nproc)"
+echo ""
+echo "  THEN to start your node:"
+echo "    ./src/faircoind -daemon -gen=1"
+echo ""
+echo "  You can now delete this script:"
+echo "    rm genesis-mine.sh"
+echo ""

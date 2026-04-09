@@ -1,4 +1,4 @@
-.TH PIE.CONF "5" "January 2011" "faircoin.conf 3.19"
+.TH FAIRCOIN.CONF "5" "January 2011" "faircoin.conf 3.19"
 .SH NAME
 faircoin.conf \- faircoin configuration file
 .SH SYNOPSIS
@@ -18,10 +18,10 @@ Enable or disable run on the test network instead of the real *faircoin* network
 \fBproxy=\fR\fI'127.0.0.1:9050'\fR
 Connect via a socks4 proxy.
 .TP
-\fBaddnode=\fR\fI'10.0.0.2:53472'\fR
+\fBaddnode=\fR\fI'10.0.0.2:46372'\fR
 Use as many *addnode=* settings as you like to connect to specific peers.
 .TP
-\fBconnect=\fR\fI'10.0.0.1:53472'\fR
+\fBconnect=\fR\fI'10.0.0.1:46372'\fR
 Use as many *connect=* settings as you like to connect ONLY to specific peers.
 .TP
 \fRmaxconnections=\fR\fI'value'\fR
@@ -40,7 +40,7 @@ You must set *rpcpassword* to secure the JSON-RPC api.
 \fBrpcallowip=\fR\fI'192.168.1.*'\fR
 By default, only RPC connections from localhost are allowed. Specify as many *rpcallowip=* settings as you like to allow connections from other hosts (and you may use * as a wildcard character).
 .TP
-\fBrpcport=\fR\fI'53473'\fR
+\fBrpcport=\fR\fI'46373'\fR
 Listen for RPC connections on this TCP port.
 .TP
 \fBrpcconnect=\fR\fI'127.0.0.1'\fR
@@ -59,16 +59,16 @@ Acceptable ciphers (default: TLSv1+HIGH:\:!SSLv2:\:!aNULL:\:!eNULL:\:!AH:\:!3DES
 .SH MISCELLANEOUS OPTIONS
 .TP
 \fBgen=\fR[\fI'0'\fR|\fI'1'\fR]
-Enable or disable attempt to generate PIEs.
+Enable or disable attempt to generate FAIRCOINs.
 .TP
 \fB4way=\fR[\fI'0'\fR|\fI'1'\fR]
-Enable or disable use SSE instructions to try to generate PIEs faster.
+Enable or disable use SSE instructions to try to generate FAIRCOINs faster.
 .TP
 \fBkeypool=\fR\fI'100'\fR
 Pre-generate this many public/private key pairs, so wallet backups will be valid for both prior transactions and several dozen future transactions.
 .TP
 \fBpaytxfee=\fR\fI'0.00'\fR
-Pay an optional transaction fee every time you send PIEs. Transactions with fees are more likely than free transactions to be included in generated blocks, so may be validated sooner.
+Pay an optional transaction fee every time you send FAIRCOINs. Transactions with fees are more likely than free transactions to be included in generated blocks, so may be validated sooner.
 .TP
 \fBallowreceivebyip=\fR\fI'1'\fR
 Allow direct connections for the 'pay via IP address' feature.

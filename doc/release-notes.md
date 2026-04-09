@@ -1,6 +1,6 @@
-faircoin Core version 2.3.0 is now available from:
+faircoin Core version 3.0.0 is now available from:
 
-  <https://github.com/faircoin-project/faircoin/releases>
+  <https://github.com/FairCoinOfficial/FairCoin/releases>
 
 This is a new major version release, including various bug fixes and
 performance improvements, as well as updated translations.
@@ -129,7 +129,7 @@ SPV Client Support
 
 faircoin Core now enables bloom filters by default to support SPV clients like mobile wallets. This feature can be disabled by using the `-peerbloomfilters` option on startup.
 
-2.3.0 Change log
+3.0.0 Change log
 =================
 
 Detailed release notes follow. This overview includes changes that affect
