@@ -190,7 +190,7 @@ fi
 ##       compatibility with the legacy buildsystem.
 ##
 if test "x$CXXFLAGS_overridden" = "xno"; then
-  CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wno-implicit-fallthrough -Wno-deprecated-copy -Wno-error=deprecated-declarations -Wno-restrict"
+  CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wno-implicit-fallthrough -Wno-deprecated-copy -Wno-deprecated-declarations -Wno-restrict -Wno-int-in-bool-context"
 fi
 CPPFLAGS="$CPPFLAGS -DBOOST_SPIRIT_THREADSAFE -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS -DBOOST_BIND_GLOBAL_PLACEHOLDERS"
 

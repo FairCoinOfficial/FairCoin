@@ -22,7 +22,7 @@ public:
     leveldb_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 
-void HandleError(const leveldb::Status& status) throw(leveldb_error);
+void HandleError(const leveldb::Status& status);
 
 /** Batch of changes queued to be written to a CLevelDBWrapper */
 class CLevelDBBatch
@@ -145,7 +145,7 @@ public:
         return WriteBatch(batch, fSync);
     }
 
-    bool WriteBatch(CLevelDBBatch& batch, bool fSync = false) throw(leveldb_error);
+    bool WriteBatch(CLevelDBBatch& batch, bool fSync = false);
 
     // not available for LevelDB; provide for compatibility with BDB
     bool Flush()

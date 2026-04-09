@@ -332,7 +332,7 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of(0, uint256("0x00000fa8726dba7c743e86a793c24f0fb3facf55c02a3f5b57e533389ab09e37"));
-static const Checkpoints::CCheckpointData data = {
+static const Checkpoints::CCheckpointData mainCheckpointData = {
     &mapCheckpoints,
     1744156800, // April 9, 2026 00:00:00 UTC
     0,
@@ -444,7 +444,7 @@ public:
 
     const Checkpoints::CCheckpointData& Checkpoints() const
     {
-        return data;
+        return mainCheckpointData;
     }
 };
 static CMainParams mainParams;
@@ -596,7 +596,7 @@ public:
     const Checkpoints::CCheckpointData& Checkpoints() const
     {
         // UnitTest share the same checkpoints as MAIN
-        return data;
+        return mainCheckpointData;
     }
 
     //! Published setters to allow changing values in unit test cases

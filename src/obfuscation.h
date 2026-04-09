@@ -36,7 +36,7 @@ enum PoolStatus {
 };
 
 // status update message constants
-enum MasternodeResponse {
+enum MasternodeResponse : int {
     MASTERNODE_RESET = -1,
     MASTERNODE_REJECTED = 0,
     MASTERNODE_ACCEPTED = 1
