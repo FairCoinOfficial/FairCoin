@@ -1002,7 +1002,8 @@ void ThreadMapPort()
     struct IGDdatas data;
     int r;
 
-    r = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
+    char wanaddr[64] = {};
+    r = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr), wanaddr, sizeof(wanaddr));
     if (r == 1) {
         if (fDiscover) {
             char externalIPAddress[40];

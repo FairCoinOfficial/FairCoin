@@ -891,7 +891,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     std::string strDataDir = GetDataDir().string();
 #ifdef ENABLE_WALLET
     // Wallet file must be a plain filename without a directory
-    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile))
+    if (strWalletFile != boost::filesystem::path(strWalletFile).stem().string() + boost::filesystem::path(strWalletFile).extension().string())
         return InitError(strprintf(_("Wallet %s resides outside data directory %s"), strWalletFile, strDataDir));
 #endif
     // Make sure only a single faircoin process is using the data directory.
