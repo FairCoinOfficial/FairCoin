@@ -323,63 +323,61 @@ with open("/tmp/faircoin_genesis_results.txt", "w") as f:
 
 PYEOF
 
-echo "[2/4] Mining genesis blocks..."
-echo "  (This may take a few minutes depending on your CPU)"
-echo ""
+# -------------------------------------------------------
+# Step 2: Check if genesis already mined
+# -------------------------------------------------------
+if grep -q "genesis.nNonce = 0;" "$CHAINPARAMS" 2>/dev/null; then
+    echo "[2/4] Mining genesis blocks..."
+    echo "  (This may take a few minutes depending on your CPU)"
+    echo ""
 
-python3 /tmp/faircoin_genesis_miner.py
+    python3 /tmp/faircoin_genesis_miner.py
 
-if [ $? -ne 0 ]; then
-    echo "ERROR: Genesis mining failed!"
-    exit 1
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Genesis mining failed!"
+        exit 1
+    fi
+
+    # Read results
+    source /tmp/faircoin_genesis_results.txt
+
+    # ---------------------------------------------------
+    # Step 3: Auto-patch chainparams.cpp
+    # ---------------------------------------------------
+    echo ""
+    echo "[3/4] Patching src/chainparams.cpp..."
+
+    # Backup
+    cp "$CHAINPARAMS" "${CHAINPARAMS}.bak"
+
+    # Patch mainnet
+    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine genesis block to find valid nonce/genesis.nNonce = ${MAINNET_NONCE};/" "$CHAINPARAMS"
+    sed -i "s|// TODO: Update these asserts after mining the new genesis block||" "$CHAINPARAMS"
+    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
+    sed -i "s|//assert(genesis.hashMerkleRoot == uint256(\"0xNEW_MERKLE_ROOT\"));|assert(genesis.hashMerkleRoot == uint256(\"0x${MAINNET_MERKLE}\"));|" "$CHAINPARAMS"
+
+    # Patch testnet
+    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine testnet genesis block/genesis.nNonce = ${TESTNET_NONCE};/" "$CHAINPARAMS"
+    sed -i "s|// TODO: Update after mining testnet genesis||" "$CHAINPARAMS"
+    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_TESTNET_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
+
+    # Patch regtest
+    sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine regtest genesis block/genesis.nNonce = ${REGTEST_NONCE};/" "$CHAINPARAMS"
+    sed -i "s|// TODO: Update after mining regtest genesis||" "$CHAINPARAMS"
+    sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_REGTEST_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
+
+    # Patch checkpoints
+    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new genesis hash|boost::assign::map_list_of(0, uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
+    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new testnet genesis hash|boost::assign::map_list_of(0, uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
+    sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new regtest genesis hash|boost::assign::map_list_of(0, uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
+
+    echo "  chainparams.cpp patched!"
+else
+    echo "[2/4] Genesis blocks already mined - skipping."
+    echo "[3/4] chainparams.cpp already patched - skipping."
 fi
 
-# Read results
-source /tmp/faircoin_genesis_results.txt
-
-# -------------------------------------------------------
-# Step 3: Auto-patch chainparams.cpp
-# -------------------------------------------------------
-echo ""
-echo "[3/4] Patching src/chainparams.cpp..."
-
-if [ ! -f "$CHAINPARAMS" ]; then
-    echo "ERROR: Cannot find $CHAINPARAMS"
-    exit 1
-fi
-
-# Backup
-cp "$CHAINPARAMS" "${CHAINPARAMS}.bak"
-
-# Patch mainnet nonce
-sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine genesis block to find valid nonce/genesis.nNonce = ${MAINNET_NONCE};/" "$CHAINPARAMS"
-
-# Patch mainnet asserts
-sed -i "s|// TODO: Update these asserts after mining the new genesis block||" "$CHAINPARAMS"
-sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
-sed -i "s|//assert(genesis.hashMerkleRoot == uint256(\"0xNEW_MERKLE_ROOT\"));|assert(genesis.hashMerkleRoot == uint256(\"0x${MAINNET_MERKLE}\"));|" "$CHAINPARAMS"
-
-# Patch testnet nonce
-sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine testnet genesis block/genesis.nNonce = ${TESTNET_NONCE};/" "$CHAINPARAMS"
-
-# Patch testnet assert
-sed -i "s|// TODO: Update after mining testnet genesis||" "$CHAINPARAMS"
-sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_TESTNET_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
-
-# Patch regtest nonce
-sed -i "s/genesis.nNonce = 0; \/\/ TODO: Re-mine regtest genesis block/genesis.nNonce = ${REGTEST_NONCE};/" "$CHAINPARAMS"
-
-# Patch regtest assert
-sed -i "s|// TODO: Update after mining regtest genesis||" "$CHAINPARAMS"
-sed -i "s|//assert(hashGenesisBlock == uint256(\"0xNEW_REGTEST_GENESIS_HASH\"));|assert(hashGenesisBlock == uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
-
-# Patch checkpoints with genesis hashes
-sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new genesis hash|boost::assign::map_list_of(0, uint256(\"0x${MAINNET_HASH}\"));|" "$CHAINPARAMS"
-sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new testnet genesis hash|boost::assign::map_list_of(0, uint256(\"0x${TESTNET_HASH}\"));|" "$CHAINPARAMS"
-sed -i "s|boost::assign::map_list_of(0, uint256(\"0x0\")); // TODO: Update with new regtest genesis hash|boost::assign::map_list_of(0, uint256(\"0x${REGTEST_HASH}\"));|" "$CHAINPARAMS"
-
-echo "  chainparams.cpp patched successfully!"
-echo "  Backup saved to ${CHAINPARAMS}.bak"
+rm -f /tmp/faircoin_genesis_miner.py /tmp/faircoin_genesis_results.txt
 
 # -------------------------------------------------------
 # Step 4: Compile
@@ -397,20 +395,17 @@ fi
 
 if [ ! -f Makefile ]; then
     echo "  Running configure..."
-    CONFIGURE_FLAGS=""
-    if [ "${USE_INCOMPATIBLE_BDB:-0}" = "1" ]; then
-        echo "  (using --with-incompatible-bdb for Berkeley DB 5.3+)"
-        CONFIGURE_FLAGS="--with-incompatible-bdb"
+    CONFIGURE_FLAGS="--without-gui"
+    # Auto-detect if we need --with-incompatible-bdb
+    if [ "${USE_INCOMPATIBLE_BDB:-0}" = "1" ] || ! dpkg -l libdb4.8-dev &>/dev/null 2>&1; then
+        echo "  (using --with-incompatible-bdb for Berkeley DB 5.x)"
+        CONFIGURE_FLAGS="$CONFIGURE_FLAGS --with-incompatible-bdb"
     fi
-    # Try without GUI first for faster build; add --with-gui=qt5 if you want the GUI
-    ./configure $CONFIGURE_FLAGS --without-gui 2>&1 | tail -3
+    ./configure $CONFIGURE_FLAGS 2>&1 | tail -3
 fi
 
 echo "  Running make (this may take several minutes)..."
 make -j$(nproc) 2>&1 | tail -10
-
-# Cleanup
-rm -f /tmp/faircoin_genesis_miner.py /tmp/faircoin_genesis_results.txt
 
 echo ""
 echo "  ======================================================"
