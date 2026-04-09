@@ -331,7 +331,7 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 //    timestamp before)
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
-    boost::assign::map_list_of(0, uint256("0x00000036aab763ea1299d9e90b2ae81ba236f8c65f7be065899a39188a9d53b8"));
+    boost::assign::map_list_of(0, uint256("0x0"));
 static const Checkpoints::CCheckpointData mainCheckpointData = {
     &mapCheckpoints,
     1744156800, // April 9, 2026 00:00:00 UTC
@@ -340,7 +340,7 @@ static const Checkpoints::CCheckpointData mainCheckpointData = {
 };
 
 static Checkpoints::MapCheckpoints mapCheckpointsTestnet =
-    boost::assign::map_list_of(0, uint256("0x00000036aab763ea1299d9e90b2ae81ba236f8c65f7be065899a39188a9d53b8"));
+    boost::assign::map_list_of(0, uint256("0x0"));
 static const Checkpoints::CCheckpointData dataTestnet = {
     &mapCheckpointsTestnet,
     1744156800,
@@ -348,7 +348,7 @@ static const Checkpoints::CCheckpointData dataTestnet = {
     0};
 
 static Checkpoints::MapCheckpoints mapCheckpointsRegtest =
-    boost::assign::map_list_of(0, uint256("0x2b5746b6aec4f5b202dbed111b4ba40bbaf36904708b2cdb9bd7c378c4997eee"));
+    boost::assign::map_list_of(0, uint256("0x0"));
 static const Checkpoints::CCheckpointData dataRegtest = {
     &mapCheckpointsRegtest,
     1744156800,
@@ -371,8 +371,7 @@ public:
         pchMessageStart[1] = 0xd7;
         pchMessageStart[2] = 0xe1;
         pchMessageStart[3] = 0xb4;
-        // REPLACE: Generate your own alert key pair (see doc/GENERATE-KEYS.md)
-        vAlertPubKey = ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        vAlertPubKey = ParseHex("041a91c580a8014590c2cfad8fc727f945fad786986e4aa4f376d7841c4eef80d7a7d81eda3c8fd32611f79377654309e510c747df4de325feaea7b0f142e1009d");
         nDefaultPort = 46372;
         bnProofOfWorkLimit = ~uint256(0) >> 20; // faircoin starting difficulty is 1 / 2^12
         nSubsidyHalvingInterval = 210000;
@@ -395,20 +394,26 @@ public:
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
         txNew.vout[0].nValue = 0 * COIN;
-        // REPLACE: Generate your own genesis key pair (see doc/GENERATE-KEYS.md) - this key receives the premine
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") << OP_CHECKSIG;
+        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04d2db4d5f4e90aa5438033be90d041775ecfdf35b8452770df0a13aed78940b3f305d131c7fc54bed55419cb9d0171335d917da9b2f7705e2f426cd717bf3f30d") << OP_CHECKSIG;
         genesis.vtx.push_back(txNew);
         genesis.hashPrevBlock = 0;
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         genesis.nVersion = 1;
         genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
         genesis.nBits = 0x1e0ffff0;
-        genesis.nNonce = 5274911;
+        genesis.nNonce = 0;
 
         hashGenesisBlock = genesis.GetHash();
 
-        assert(hashGenesisBlock == uint256("0x00000036aab763ea1299d9e90b2ae81ba236f8c65f7be065899a39188a9d53b8"));
-        assert(genesis.hashMerkleRoot == uint256("0xc29464ffd7c68b762687f442c51aaabab1b4b52b48c71689def93f42e7571b85"));
+        // Temporary genesis mining - remove after finding correct values
+        {
+            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
+            while (hashGenesisBlock > hashTarget) {
+                ++genesis.nNonce;
+                hashGenesisBlock = genesis.GetHash();
+            }
+            printf("MAINNET nonce=%u hash=%s merkle=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
+        }
 
         vSeeds.push_back(CDNSSeedData("seed1.fairco.in", "seed1.fairco.in"));
         vSeeds.push_back(CDNSSeedData("seed2.fairco.in", "seed2.fairco.in"));
@@ -435,10 +440,8 @@ public:
         fHeadersFirstSyncingActive = false;
 
         nPoolMaxTransactions = 3;
-        // REPLACE: Generate your own spork key pair (see doc/GENERATE-KEYS.md)
-        strSporkKey = "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        // REPLACE: Generate a valid FairCoin address for the obfuscation pool dummy
-        strObfuscationPoolDummyAddress = "REPLACE_WITH_VALID_FAIRCOIN_ADDRESS";
+        strSporkKey = "0493151a1e1c84e8b3f7fc59c090d46535f52235740de7f290cd22d165a0a404778dc02ac1c06d295e0036c1e1fdcfce3d392967d6cc4116857715b877778b7349";
+        strObfuscationPoolDummyAddress = ""; // Will be set after first launch
         nStartMasternodePayments = 1403728576; //Wed, 25 Jun 2014 20:36:16 GMT
     }
 
@@ -463,8 +466,7 @@ public:
         pchMessageStart[1] = 0x2e;
         pchMessageStart[2] = 0x9c;
         pchMessageStart[3] = 0xf3;
-        // REPLACE: Generate your own testnet alert key pair (see doc/GENERATE-KEYS.md)
-        vAlertPubKey = ParseHex("040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        vAlertPubKey = ParseHex("041a91c580a8014590c2cfad8fc727f945fad786986e4aa4f376d7841c4eef80d7a7d81eda3c8fd32611f79377654309e510c747df4de325feaea7b0f142e1009d");
         nDefaultPort = 46374;
         nEnforceBlockUpgradeMajority = 51;
         nRejectBlockOutdatedMajority = 75;
@@ -480,10 +482,17 @@ public:
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1744156800; // April 9, 2026 00:00:00 UTC
-        genesis.nNonce = 5274911;
+        genesis.nNonce = 0;
 
         hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256("0x00000036aab763ea1299d9e90b2ae81ba236f8c65f7be065899a39188a9d53b8"));
+        {
+            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
+            while (hashGenesisBlock > hashTarget) {
+                ++genesis.nNonce;
+                hashGenesisBlock = genesis.GetHash();
+            }
+            printf("TESTNET nonce=%u hash=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str());
+        }
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -511,9 +520,8 @@ public:
         fTestnetToBeDeprecatedFieldRPC = true;
 
         nPoolMaxTransactions = 2;
-        // REPLACE: Generate your own testnet spork key pair (see doc/GENERATE-KEYS.md)
-        strSporkKey = "040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        strObfuscationPoolDummyAddress = "REPLACE_WITH_VALID_TESTNET_ADDRESS";
+        strSporkKey = "0493151a1e1c84e8b3f7fc59c090d46535f52235740de7f290cd22d165a0a404778dc02ac1c06d295e0036c1e1fdcfce3d392967d6cc4116857715b877778b7349";
+        strObfuscationPoolDummyAddress = "";
         nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
     }
     const Checkpoints::CCheckpointData& Checkpoints() const
@@ -552,7 +560,14 @@ public:
 
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 46376;
-        assert(hashGenesisBlock == uint256("0x2b5746b6aec4f5b202dbed111b4ba40bbaf36904708b2cdb9bd7c378c4997eee"));
+        {
+            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
+            while (hashGenesisBlock > hashTarget) {
+                ++genesis.nNonce;
+                hashGenesisBlock = genesis.GetHash();
+            }
+            printf("REGTEST nonce=%u hash=%s\n", genesis.nNonce, hashGenesisBlock.ToString().c_str());
+        }
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.
