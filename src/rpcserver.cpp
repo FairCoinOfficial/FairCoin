@@ -27,6 +27,11 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION >= 107300
+using namespace boost::placeholders;
+#endif
 
 using namespace boost;
 using namespace boost::asio;
@@ -41,11 +46,19 @@ static std::string rpcWarmupStatus("RPC server started");
 static CCriticalSection cs_rpcWarmup;
 
 //! These are created by StartRPCThreads, destroyed in StopRPCThreads
+#if BOOST_VERSION >= 108700
+static boost::asio::io_context* rpc_io_service = NULL;
+static map<string, boost::shared_ptr<boost::asio::steady_timer> > deadlineTimers;
+static ssl::context* rpc_ssl_context = NULL;
+static boost::thread_group* rpc_worker_group = NULL;
+static boost::asio::executor_work_guard<boost::asio::io_context::executor_type>* rpc_dummy_work = NULL;
+#else
 static asio::io_service* rpc_io_service = NULL;
 static map<string, boost::shared_ptr<deadline_timer> > deadlineTimers;
 static ssl::context* rpc_ssl_context = NULL;
 static boost::thread_group* rpc_worker_group = NULL;
 static boost::asio::io_service::work* rpc_dummy_work = NULL;
+#endif
 static std::vector<CSubNet> rpc_allow_subnets; //!< List of subnets to allow RPC connections from
 static std::vector<boost::shared_ptr<ip::tcp::acceptor> > rpc_acceptors;
 
@@ -409,8 +422,13 @@ CNetAddr BoostAsioToCNetAddr(boost::asio::ip::address address)
 {
     CNetAddr netaddr;
     // Make sure that IPv4-compatible and IPv4-mapped IPv6 addresses are treated as IPv4 addresses
+#if BOOST_VERSION >= 108700
+    if (address.is_v6() && address.to_v6().is_v4_mapped())
+        address = boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, address.to_v6());
+#else
     if (address.is_v6() && (address.to_v6().is_v4_compatible() || address.to_v6().is_v4_mapped()))
         address = address.to_v6().to_v4();
+#endif
 
     if (address.is_v4()) {
         boost::asio::ip::address_v4::bytes_type bytes = address.to_v4().to_bytes();
@@ -435,6 +453,16 @@ template <typename Protocol>
 class AcceptedConnectionImpl : public AcceptedConnection
 {
 public:
+#if BOOST_VERSION >= 108700
+    AcceptedConnectionImpl(
+        boost::asio::io_context& io_context,
+        ssl::context& context,
+        bool fUseSSL) : sslStream(io_context, context),
+                        _d(sslStream, fUseSSL),
+                        _stream(_d)
+    {
+    }
+#else
     AcceptedConnectionImpl(
         asio::io_service& io_service,
         ssl::context& context,
@@ -443,6 +471,7 @@ public:
                         _stream(_d)
     {
     }
+#endif
 
     virtual std::iostream& stream()
     {
@@ -486,7 +515,13 @@ static void RPCListen(boost::shared_ptr<basic_socket_acceptor<Protocol, SocketAc
     const bool fUseSSL)
 {
     // Accept connection
+#if BOOST_VERSION >= 108700
+    boost::shared_ptr<AcceptedConnectionImpl<Protocol> > conn(new AcceptedConnectionImpl<Protocol>(*rpc_io_service, context, fUseSSL));
+#elif BOOST_VERSION >= 106600
     boost::shared_ptr<AcceptedConnectionImpl<Protocol> > conn(new AcceptedConnectionImpl<Protocol>(static_cast<boost::asio::io_service&>(acceptor->get_executor().context()), context, fUseSSL));
+#else
+    boost::shared_ptr<AcceptedConnectionImpl<Protocol> > conn(new AcceptedConnectionImpl<Protocol>(acceptor->get_io_service(), context, fUseSSL));
+#endif
 
     acceptor->async_accept(
         conn->sslStream.lowest_layer(),
@@ -539,7 +574,11 @@ static ip::tcp::endpoint ParseEndpoint(const std::string& strEndpoint, int defau
     std::string addr;
     int port = defaultPort;
     SplitHostPort(strEndpoint, port, addr);
+#if BOOST_VERSION >= 108700
+    return ip::tcp::endpoint(boost::asio::ip::make_address(addr), port);
+#else
     return ip::tcp::endpoint(asio::ip::address::from_string(addr), port);
+#endif
 }
 
 void StartRPCThreads()
@@ -591,7 +630,11 @@ void StartRPCThreads()
     }
 
     assert(rpc_io_service == NULL);
+#if BOOST_VERSION >= 108700
+    rpc_io_service = new boost::asio::io_context();
+#else
     rpc_io_service = new asio::io_service();
+#endif
     rpc_ssl_context = new ssl::context(ssl::context::sslv23);
 
     const bool fUseSSL = GetBoolArg("-rpcssl", false);
@@ -668,7 +711,11 @@ void StartRPCThreads()
                 v6_only_error);
 
             acceptor->bind(endpoint);
+#if BOOST_VERSION >= 108700
+            acceptor->listen(boost::asio::socket_base::max_listen_connections);
+#else
             acceptor->listen(socket_base::max_connections);
+#endif
 
             RPCListen(acceptor, *rpc_ssl_context, fUseSSL);
 
@@ -692,19 +739,30 @@ void StartRPCThreads()
 
     rpc_worker_group = new boost::thread_group();
     for (int i = 0; i < GetArg("-rpcthreads", 4); i++)
+#if BOOST_VERSION >= 108700
+        rpc_worker_group->create_thread(boost::bind(&boost::asio::io_context::run, rpc_io_service));
+#else
         rpc_worker_group->create_thread(boost::bind(&asio::io_service::run, rpc_io_service));
+#endif
     fRPCRunning = true;
 }
 
 void StartDummyRPCThread()
 {
     if (rpc_io_service == NULL) {
+#if BOOST_VERSION >= 108700
+        rpc_io_service = new boost::asio::io_context();
+        rpc_dummy_work = new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(boost::asio::make_work_guard(*rpc_io_service));
+        rpc_worker_group = new boost::thread_group();
+        rpc_worker_group->create_thread(boost::bind(&boost::asio::io_context::run, rpc_io_service));
+#else
         rpc_io_service = new asio::io_service();
         /* Create dummy "work" to keep the thread from exiting when no timeouts active,
          * see http://www.boost.org/doc/libs/1_51_0/doc/html/boost_asio/reference/io_service.html#boost_asio.reference.io_service.stopping_the_io_service_from_running_out_of_work */
         rpc_dummy_work = new asio::io_service::work(*rpc_io_service);
         rpc_worker_group = new boost::thread_group();
         rpc_worker_group->create_thread(boost::bind(&asio::io_service::run, rpc_io_service));
+#endif
         fRPCRunning = true;
     }
 }
@@ -725,11 +783,17 @@ void StopRPCThreads()
             LogPrintf("%s: Warning: %s when cancelling acceptor", __func__, ec.message());
     }
     rpc_acceptors.clear();
+#if BOOST_VERSION >= 108700
+    BOOST_FOREACH (const PAIRTYPE(std::string, boost::shared_ptr<boost::asio::steady_timer>) & timer, deadlineTimers) {
+        timer.second->cancel();
+    }
+#else
     BOOST_FOREACH (const PAIRTYPE(std::string, boost::shared_ptr<deadline_timer>) & timer, deadlineTimers) {
         timer.second->cancel(ec);
         if (ec)
             LogPrintf("%s: Warning: %s when cancelling timer", __func__, ec.message());
     }
+#endif
     deadlineTimers.clear();
 
     rpc_io_service->stop();
@@ -783,10 +847,19 @@ void RPCRunLater(const std::string& name, boost::function<void(void)> func, int6
     assert(rpc_io_service != NULL);
 
     if (deadlineTimers.count(name) == 0) {
+#if BOOST_VERSION >= 108700
+        deadlineTimers.insert(make_pair(name,
+            boost::shared_ptr<boost::asio::steady_timer>(new boost::asio::steady_timer(*rpc_io_service))));
+#else
         deadlineTimers.insert(make_pair(name,
             boost::shared_ptr<deadline_timer>(new deadline_timer(*rpc_io_service))));
+#endif
     }
+#if BOOST_VERSION >= 108700
+    deadlineTimers[name]->expires_after(std::chrono::seconds(nSeconds));
+#else
     deadlineTimers[name]->expires_from_now(posix_time::seconds(nSeconds));
+#endif
     deadlineTimers[name]->async_wait(boost::bind(RPCRunHandler, _1, func));
 }
 

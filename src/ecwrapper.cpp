@@ -10,6 +10,25 @@
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
+#include <openssl/opensslv.h>
+
+// OpenSSL 1.1.0+ made ECDSA_SIG opaque; provide compat shims for older versions
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void ECDSA_SIG_get0(const ECDSA_SIG* sig, const BIGNUM** pr, const BIGNUM** ps)
+{
+    if (pr) *pr = sig->r;
+    if (ps) *ps = sig->s;
+}
+static int ECDSA_SIG_set0(ECDSA_SIG* sig, BIGNUM* r, BIGNUM* s)
+{
+    if (!r || !s) return 0;
+    BN_clear_free(sig->r);
+    BN_clear_free(sig->s);
+    sig->r = r;
+    sig->s = s;
+    return 1;
+}
+#endif
 
 namespace
 {

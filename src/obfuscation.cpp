@@ -55,7 +55,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (pfrom->nVersion < ActiveProtocol()) {
             errorID = ERR_VERSION;
             LogPrintf("dsa -- incompatible version! \n");
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
 
             return;
         }
@@ -63,7 +63,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (!fMasterNode) {
             errorID = ERR_NOT_A_MN;
             LogPrintf("dsa -- not a Masternode! \n");
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
 
             return;
         }
@@ -75,7 +75,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         CMasternode* pmn = mnodeman.Find(activeMasternode.vin);
         if (pmn == NULL) {
             errorID = ERR_MN_LIST;
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
             return;
         }
 
@@ -84,18 +84,18 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
                 pmn->nLastDsq + mnodeman.CountEnabled(ActiveProtocol()) / 5 > mnodeman.nDsqCount) {
                 LogPrintf("dsa -- last dsq too recent, must wait. %s \n", pfrom->addr.ToString());
                 errorID = ERR_RECENT;
-                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                 return;
             }
         }
 
         if (!IsCompatibleWithSession(nDenom, txCollateral, errorID)) {
             LogPrintf("dsa -- not compatible with existing transactions! \n");
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
             return;
         } else {
             LogPrintf("dsa -- is compatible, please submit! \n");
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_ACCEPTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_ACCEPTED, errorID);
             return;
         }
 
@@ -159,7 +159,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (pfrom->nVersion < ActiveProtocol()) {
             LogPrintf("dsi -- incompatible version! \n");
             errorID = ERR_VERSION;
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
 
             return;
         }
@@ -167,7 +167,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (!fMasterNode) {
             LogPrintf("dsi -- not a Masternode! \n");
             errorID = ERR_NOT_A_MN;
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
 
             return;
         }
@@ -182,7 +182,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (!IsSessionReady()) {
             LogPrintf("dsi -- session not complete! \n");
             errorID = ERR_SESSION;
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
             return;
         }
 
@@ -190,7 +190,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
         if (!IsCompatibleWithEntries(out)) {
             LogPrintf("dsi -- not compatible with existing transactions! \n");
             errorID = ERR_EXISTING_TX;
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
             return;
         }
 
@@ -210,13 +210,13 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
                 if (o.scriptPubKey.size() != 25) {
                     LogPrintf("dsi - non-standard pubkey detected! %s\n", o.scriptPubKey.ToString());
                     errorID = ERR_NON_STANDARD_PUBKEY;
-                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                     return;
                 }
                 if (!o.scriptPubKey.IsNormalPaymentScript()) {
                     LogPrintf("dsi - invalid script! %s\n", o.scriptPubKey.ToString());
                     errorID = ERR_INVALID_SCRIPT;
-                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                     return;
                 }
             }
@@ -240,7 +240,7 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
             if (nValueIn > OBFUSCATION_POOL_MAX) {
                 LogPrintf("dsi -- more than Obfuscation pool max! %s\n", tx.ToString());
                 errorID = ERR_MAXIMUM;
-                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                 return;
             }
 
@@ -248,13 +248,13 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
                 if (nValueIn - nValueOut > nValueIn * .01) {
                     LogPrintf("dsi -- fees are too high! %s\n", tx.ToString());
                     errorID = ERR_FEES;
-                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                     return;
                 }
             } else {
                 LogPrintf("dsi -- missing input tx! %s\n", tx.ToString());
                 errorID = ERR_MISSING_TX;
-                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                 return;
             }
 
@@ -263,19 +263,19 @@ void CObfuscationPool::ProcessMessageObfuscation(CNode* pfrom, std::string& strC
                 if (!AcceptableInputs(mempool, state, CTransaction(tx), false, NULL, false, true)) {
                     LogPrintf("dsi -- transaction not valid! \n");
                     errorID = ERR_INVALID_TX;
-                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+                    pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
                     return;
                 }
             }
         }
 
         if (AddEntry(in, nAmount, txCollateral, out, errorID)) {
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_ACCEPTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_ACCEPTED, errorID);
             Check();
 
             RelayStatus(sessionID, GetState(), GetEntriesCount(), MASTERNODE_RESET);
         } else {
-            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), MASTERNODE_REJECTED, errorID);
+            pfrom->PushMessage("dssu", sessionID, GetState(), GetEntriesCount(), (int)MASTERNODE_REJECTED, errorID);
         }
 
     } else if (strCommand == "dssu") { //Obfuscation status update

@@ -13,6 +13,7 @@
 #include "utilstrencodings.h"
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/version.hpp>
 
 #define _(x) std::string(x) /* Keep the _() around in case gettext or such will be used later to translate non-UI */
 
@@ -108,7 +109,11 @@ Object CallRPC(const string& strMethod, const Array& params)
 
     // Connect to localhost
     bool fUseSSL = GetBoolArg("-rpcssl", false);
+#if BOOST_VERSION >= 108700
+    boost::asio::io_context io_service;
+#else
     asio::io_service io_service;
+#endif
     ssl::context context(ssl::context::sslv23);
     context.set_options(ssl::context::no_sslv2 | ssl::context::no_sslv3);
     asio::ssl::stream<asio::ip::tcp::socket> sslStream(io_service, context);

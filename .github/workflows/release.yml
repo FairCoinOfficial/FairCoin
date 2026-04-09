@@ -16,14 +16,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev autoconf \
-            pkg-config libssl-dev libboost-all-dev \
-            libdb5.3-dev libdb5.3++-dev \
-            libminiupnpc-dev libzmq3-dev libevent-dev
+            pkg-config bsdmainutils curl python3
+
+      - name: Build depends
+        run: make -C depends HOST=x86_64-linux-gnu NO_QT=1 -j$(nproc)
 
       - name: Build
         run: |
           ./autogen.sh
-          ./configure --without-gui --with-incompatible-bdb --disable-zmq
+          CONFIG_SITE=$PWD/depends/x86_64-linux-gnu/share/config.site ./configure --prefix=/ --without-gui --disable-zmq
           make -j$(nproc)
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
@@ -50,15 +51,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev autoconf \
-            pkg-config libssl-dev libboost-all-dev \
-            libdb5.3-dev libdb5.3++-dev \
-            libminiupnpc-dev libzmq3-dev libevent-dev \
+            pkg-config bsdmainutils curl python3 \
             dpkg-dev fakeroot
+
+      - name: Build depends
+        run: make -C depends HOST=x86_64-linux-gnu NO_QT=1 -j$(nproc)
 
       - name: Build
         run: |
           ./autogen.sh
-          ./configure --without-gui --with-incompatible-bdb --disable-zmq
+          CONFIG_SITE=$PWD/depends/x86_64-linux-gnu/share/config.site ./configure --prefix=/ --without-gui --disable-zmq
           make -j$(nproc)
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
@@ -74,14 +76,14 @@ jobs:
           # Docs
           cp COPYING README.md doc/GENERATE-KEYS.md $PKG/usr/share/doc/faircoin/
 
-          # Control file
+          # Control file (statically linked — only libc6 needed)
           cat > $PKG/DEBIAN/control <<EOF
           Package: faircoin
           Version: ${VERSION}
           Section: net
           Priority: optional
           Architecture: amd64
-          Depends: libc6, libssl3, libboost-system1.74.0 | libboost-system1.83.0, libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-thread1.74.0 | libboost-thread1.83.0, libboost-program-options1.74.0 | libboost-program-options1.83.0, libboost-chrono1.74.0 | libboost-chrono1.83.0, libdb5.3++, libminiupnpc17, libevent-2.1-7
+          Depends: libc6
           Maintainer: FairCoin Official <contact@fairco.in>
           Description: FairCoin cryptocurrency daemon and CLI
            FairCoin is a cryptocurrency with masternodes, coin mixing,

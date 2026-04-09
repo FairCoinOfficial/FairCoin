@@ -3,6 +3,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "rpcserver.h"
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 108700
+#define MAKE_ADDRESS(x) boost::asio::ip::make_address(x)
+#else
+#define MAKE_ADDRESS(x) boost::asio::ip::address::from_string(x)
+#endif
 #include "rpcclient.h"
 
 #include "base58.h"
@@ -160,16 +167,16 @@ BOOST_AUTO_TEST_CASE(json_parse_errors)
 BOOST_AUTO_TEST_CASE(rpc_boostasiotocnetaddr)
 {
     // Check IPv4 addresses
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("1.2.3.4")).ToString(), "1.2.3.4");
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("127.0.0.1")).ToString(), "127.0.0.1");
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("1.2.3.4")).ToString(), "1.2.3.4");
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("127.0.0.1")).ToString(), "127.0.0.1");
     // Check IPv6 addresses
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("::1")).ToString(), "::1");
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("123:4567:89ab:cdef:123:4567:89ab:cdef")).ToString(),
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("::1")).ToString(), "::1");
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("123:4567:89ab:cdef:123:4567:89ab:cdef")).ToString(),
                                          "123:4567:89ab:cdef:123:4567:89ab:cdef");
     // v4 compatible must be interpreted as IPv4
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("::0:127.0.0.1")).ToString(), "127.0.0.1");
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("::0:127.0.0.1")).ToString(), "127.0.0.1");
     // v4 mapped must be interpreted as IPv4
-    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(boost::asio::ip::address::from_string("::ffff:127.0.0.1")).ToString(), "127.0.0.1");
+    BOOST_CHECK_EQUAL(BoostAsioToCNetAddr(MAKE_ADDRESS("::ffff:127.0.0.1")).ToString(), "127.0.0.1");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
