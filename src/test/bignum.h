@@ -15,6 +15,8 @@
 
 #include <openssl/bn.h>
 
+#include "uint256.h"
+
 class bignum_error : public std::runtime_error
 {
 public:
