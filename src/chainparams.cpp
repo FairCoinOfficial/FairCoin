@@ -434,7 +434,7 @@ public:
 
         nPoolMaxTransactions = 3;
         strSporkKey = "044072106100b738bb99d24f2230708ebebdca687a01f8d0ce138551da829cf4e28ac499242806279787afc5293c97b72694f111e91c376cdb0d0fda8778ad4425";
-        strObfuscationPoolDummyAddress = "";
+        strObfuscationPoolDummyAddress = "FRZou2ApnnNyHGJRqoHgVLDF71Yviuhfz2"; // valid FairCoin addr; used only to build the collateral-check dummy tx (must be standard, never broadcast)
         nStartMasternodePayments = 1744156800; // April 9, 2026
     }
 
