@@ -1,0 +1,49 @@
+---
+title: Masternodes
+description: Lock 5,000 FAIR as collateral to run a masternode and earn block rewards.
+order: 5
+---
+
+# Masternodes
+
+A **masternode** is an always-on full node that backs FairCoin's service layer — **FastSend** (instant, guaranteed transactions) and **coin mixing** (privacy) — in exchange for a share of block rewards. Running one requires locking **5,000 FAIR** as collateral.
+
+<Badge>5,000 FAIR collateral</Badge> <Badge>Earns rewards</Badge>
+
+## What you need
+
+- **5,000 FAIR** (exactly) for collateral — it stays in your control; it is not spent, just locked.
+- A wallet on your own machine (the "controller").
+- A VPS or always-on server with a static IP for the masternode itself.
+
+## Setup
+
+1. Send **exactly 5,000 FAIR** to a fresh receiving address in your wallet.
+2. Wait for **15 confirmations**.
+3. In the wallet **Debug Console**, generate a masternode key and save it:
+   ```
+   masternode genkey
+   ```
+4. Get the collateral output (save the **txid** and **index**):
+   ```
+   masternode outputs
+   ```
+5. Edit `~/.faircoin/masternode.conf` and add one line per masternode:
+   ```
+   mn1 YOUR_IP:46372 YOUR_MASTERNODE_KEY YOUR_TXID OUTPUT_INDEX
+   ```
+6. Restart the wallet, open the **Masternodes** tab, and click **Start Alias** for `mn1`.
+
+`46372` is the FairCoin P2P port — see [Network](/developers/docs/faircoin/network).
+
+## Keep it healthy
+
+- The masternode server must stay **online and synced** to keep earning and avoid being removed from the active set.
+- Don't move or spend the 5,000 FAIR collateral — doing so de-registers the masternode.
+- Run the daemon yourself from [source](/developers/docs/faircoin/run-a-node) for full control, or use the desktop wallet's masternode controls.
+
+For step-by-step and multi-node setups, see the official guides in the [FairCoin repository](https://github.com/FairCoinOfficial/FairCoin#masternodes), including the Windows guide and `guide-startmany` for running several at once.
+
+## Live network
+
+Browse the active masternode list and reward history on the explorer at [explorer.fairco.in/masternodes](https://explorer.fairco.in/masternodes).

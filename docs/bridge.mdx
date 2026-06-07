@@ -1,0 +1,49 @@
+---
+title: WFAIR bridge
+description: Wrapped FairCoin (WFAIR) — a 1:1 ERC-20 representation of native FAIR on Base.
+order: 3
+---
+
+# WFAIR bridge
+
+The **WFAIR bridge** issues *Wrapped FairCoin* (`WFAIR`) — an ERC-20 token on **Base** that is backed 1:1 by native FAIR. It's how FairCoin reaches the EVM world: USDC on-ramps, DeFi, and instant transfers, all redeemable for the real coin.
+
+<Badge variant="warning">Base</Badge> <Badge>ERC-20</Badge> <Badge>1:1 backed</Badge>
+
+## Contract
+
+| | |
+|---|---|
+| **Token** | WFAIR (Wrapped FairCoin) |
+| **Chain** | Base (mainnet) |
+| **Standard** | ERC-20 |
+| **Backing** | 1 WFAIR = 1 FAIR held in reserve |
+| **Address** | [`0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3`](https://basescan.org/address/0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3) |
+| **Source** | [github.com/FairCoinOfficial/faircoin-bridge](https://github.com/FairCoinOfficial/faircoin-bridge) |
+
+Always verify the address on [BaseScan](https://basescan.org/address/0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3) before approving any transaction.
+
+## How it works
+
+The bridge is a custodial mint/burn vault. Native FAIR locked in the reserve is matched 1:1 by WFAIR in circulation, so the wrapped supply can never exceed the FAIR backing it.
+
+**Wrap (FAIR → WFAIR)**
+1. Send native FAIR to the bridge deposit address.
+2. The bridge confirms the deposit and mints the same amount of WFAIR to your Base address.
+
+**Unwrap (WFAIR → FAIR)**
+1. Submit your WFAIR to the bridge on Base (via [/unwrap](https://fairco.in/unwrap)).
+2. The bridge burns the WFAIR and releases the equivalent native FAIR to your `F` address.
+
+For the user-facing flow, see [Get FAIR](/developers/docs/faircoin/get-fair).
+
+## Reserves & transparency
+
+Because backing is 1:1, the WFAIR total supply on Base should always equal (or be less than) the FAIR held in the bridge reserve. Both sides are publicly auditable:
+
+- **WFAIR supply** — read `totalSupply()` on the [token contract](https://basescan.org/address/0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3).
+- **FAIR reserve** — inspect the reserve address on the [FairCoin explorer](https://explorer.fairco.in).
+
+## For developers
+
+WFAIR is a standard ERC-20, so it works with any Base tooling out of the box (wagmi/viem, ethers, Uniswap, etc.). Read live bridge stats — supply, reserves, status — from the contract, or wire the [bridge source](https://github.com/FairCoinOfficial/faircoin-bridge) into your own integration.

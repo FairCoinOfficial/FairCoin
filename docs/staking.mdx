@@ -1,0 +1,34 @@
+---
+title: Staking
+description: Earn FairCoin block rewards by holding native FAIR in a running wallet.
+order: 4
+---
+
+# Staking
+
+FairCoin is a **PoW/PoS hybrid**. After the initial mining phase, new blocks are minted by **stakers** — holders who keep coins in an open, online wallet. Staking is the simplest way to earn FAIR: no special hardware, no collateral lock-up.
+
+<Badge>Proof of Stake</Badge> <Badge>No collateral</Badge>
+
+## How it works
+
+Your wallet uses its spendable FAIR as "stake weight" to compete for the right to sign the next block. Win one, and you collect that block's reward. The more FAIR you hold (and the longer it has matured), the more often you're picked.
+
+| | |
+|---|---|
+| **Minimum stake age** | 2 hours (coins must be unspent this long before they stake) |
+| **Block time** | ~120 seconds |
+| **Reward** | the current block subsidy (see [Network](/developers/docs/faircoin/network)) |
+
+## Start staking
+
+1. Get some native FAIR — see [Get FAIR](/developers/docs/faircoin/get-fair).
+2. Move it into [FAIRWallet](/developers/docs/faircoin/wallet) (desktop Core wallet recommended for always-on staking).
+3. Make sure the wallet is **unlocked for staking** and stays online and synced.
+4. Wait out the 2-hour maturation, then let it run — rewards arrive automatically as you mint blocks.
+
+> Tip: a wallet that's locked, offline, or out of sync can't stake. For 24/7 staking, run the desktop wallet on a machine that stays on, or [run a full node](/developers/docs/faircoin/run-a-node).
+
+## Staking vs. masternodes
+
+Staking earns from whatever you hold and is great for any balance. A [masternode](/developers/docs/faircoin/masternodes) locks **5,000 FAIR** as collateral but earns a larger, steadier share of rewards and helps secure network services like FastSend and coin mixing. Many holders do both.

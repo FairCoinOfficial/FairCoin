@@ -1,0 +1,11 @@
+{
+  "package": "faircoin",
+  "displayName": "FairCoin",
+  "shortName": "faircoin",
+  "repo": "https://github.com/FairCoinOfficial/FairCoin",
+  "category": "service",
+  "versions": ["main"],
+  "defaultVersion": "main",
+  "docsPath": "docs/",
+  "description": "Community cryptocurrency for everyday payments — native FAIR (PoW/PoS, masternodes) and WFAIR, its 1:1 wrapped token on Base."
+}

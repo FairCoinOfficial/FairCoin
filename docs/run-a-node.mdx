@@ -1,0 +1,79 @@
+---
+title: Run a node
+description: Build and run FairCoin Core (faircoind) from source on Linux.
+order: 6
+---
+
+# Run a node
+
+Running a full node gives you a trustless, fully-validating copy of the FairCoin blockchain. It's the foundation for [staking](/developers/docs/faircoin/staking), [masternodes](/developers/docs/faircoin/masternodes), and any service that needs to read or broadcast on-chain.
+
+FairCoin Core ships as **`faircoind`** (the daemon) and **`faircoin-cli`** (the RPC client), plus an optional Qt GUI wallet.
+
+<Badge>Linux</Badge> <Badge>C++</Badge> <Badge>MIT licensed</Badge>
+
+## Build from source (Ubuntu/Debian)
+
+Install the build dependencies:
+
+```bash
+sudo apt-get install build-essential libtool autotools-dev autoconf pkg-config \
+    libssl-dev libboost-all-dev libdb4.8-dev libdb4.8++-dev \
+    libminiupnpc-dev libzmq3-dev
+```
+
+For the optional Qt GUI wallet, also install:
+
+```bash
+sudo apt-get install libqt5gui5 libqt5core5a libqt5dbus5 \
+    qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
+```
+
+Clone and compile:
+
+```bash
+git clone https://github.com/FairCoinOfficial/FairCoin.git
+cd FairCoin
+./autogen.sh
+./configure
+make -j$(nproc)
+```
+
+Builds for macOS and Windows are documented in the repo's `doc/` (`build-osx.md`, `README_windows.md`).
+
+## Run
+
+```bash
+# Start the daemon
+./src/faircoind -daemon
+
+# Check sync status / node info
+./src/faircoin-cli getinfo
+
+# Gracefully stop
+./src/faircoin-cli stop
+```
+
+The daemon stores its data and config in `~/.faircoin/` by default. Create `~/.faircoin/faircoin.conf` to set RPC credentials and options, for example:
+
+```ini
+rpcuser=youruser
+rpcpassword=a-long-random-password
+server=1
+listen=1
+```
+
+## Ports
+
+| | Mainnet | Testnet |
+|---|---|---|
+| **P2P** | 46372 | 46374 |
+| **RPC** | 46373 | 46375 |
+
+Open the **P2P** port to peers; keep the **RPC** port private (localhost only unless you know what you're doing). See [Network](/developers/docs/faircoin/network) for the full reference.
+
+## Next steps
+
+- Earn on your balance → [Staking](/developers/docs/faircoin/staking)
+- Add a masternode → [Masternodes](/developers/docs/faircoin/masternodes)
+- Privacy and Tor → see `doc/tor.md` in the [repository](https://github.com/FairCoinOfficial/FairCoin)

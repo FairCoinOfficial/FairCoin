@@ -1,0 +1,48 @@
+---
+title: Get FAIR
+description: Buy FairCoin with USDC as WFAIR on Base, then unwrap to native FAIR whenever you want.
+order: 1
+---
+
+# Get FAIR
+
+There are two ways to hold FairCoin, and you can move between them at any time.
+
+## 1. Buy WFAIR with USDC (easiest)
+
+[**WFAIR**](/developers/docs/faircoin/bridge) is FairCoin wrapped 1:1 as an ERC-20 token on **Base**. If you already have a Base wallet and some USDC, this is the fastest on-ramp.
+
+1. Go to [buy.fairco.in](https://buy.fairco.in).
+2. Connect a Base-compatible wallet (e.g. Coinbase Wallet, MetaMask on Base).
+3. Swap **USDC → WFAIR**.
+
+That's it — WFAIR shows up in your wallet and is spendable across Base DeFi immediately. Because it's backed 1:1 by native FAIR held in the bridge reserve, 1 WFAIR is always redeemable for 1 FAIR.
+
+<Badge variant="warning">WFAIR on Base</Badge> <Badge>Backed 1:1</Badge>
+
+## 2. Unwrap to native FAIR
+
+When you want self-custody on the FairCoin chain — to stake, run a masternode, or pay a merchant who settles in native FAIR — **unwrap** your WFAIR:
+
+1. Go to [/unwrap](https://fairco.in/unwrap).
+2. Connect your Base wallet holding WFAIR.
+3. Enter the native FairCoin address (starts with `F`) that should receive the coins.
+4. Confirm. The bridge burns your WFAIR on Base and releases the equivalent native FAIR from reserve.
+
+You'll need a native wallet to receive it — see [FAIRWallet](/developers/docs/faircoin/wallet).
+
+## 3. Earn it
+
+You don't have to buy FAIR at all. You can earn it by participating in the network:
+
+- **[Staking](/developers/docs/faircoin/staking)** — hold FAIR in a running wallet and earn block rewards.
+- **[Masternodes](/developers/docs/faircoin/masternodes)** — lock 5,000 FAIR as collateral and earn a larger, steadier share.
+
+## Which should I choose?
+
+| You want to… | Use |
+|---|---|
+| Hold/trade casually, use USDC | **WFAIR** on Base |
+| Self-custody on the FairCoin chain | **Native FAIR** (unwrap) |
+| Stake or run a masternode | **Native FAIR** |
+| Pay a merchant | Either — many accept both |

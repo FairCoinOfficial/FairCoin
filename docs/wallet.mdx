@@ -1,0 +1,39 @@
+---
+title: FAIRWallet
+description: Self-custody FairCoin wallet for Android, iOS, and desktop.
+order: 2
+---
+
+# FAIRWallet
+
+**FAIRWallet** is the self-custody wallet for native FAIR. You hold your own keys — there is no account, no custodian, and no KYC to send or receive.
+
+<Badge>Android</Badge> <Badge>iOS</Badge> <Badge>Desktop</Badge> <Badge variant="warning">Self-custody</Badge>
+
+## What you can do
+
+- **Send & receive** native FAIR using `F`-prefixed addresses.
+- **FastSend** — guaranteed near-instant, spendable-before-confirmation transfers, ideal at a point of sale.
+- **Stake** — keep the wallet open and online to earn [staking](/developers/docs/faircoin/staking) rewards on your balance.
+- **Manage masternodes** — start and monitor a [masternode](/developers/docs/faircoin/masternodes) from the Masternodes tab (desktop).
+
+## Get it
+
+Download from [fairco.in/wallet](https://fairco.in/wallet) for your platform. On desktop, the official **FairCoin Core** wallet (the Qt GUI built from [source](/developers/docs/faircoin/run-a-node)) also gives you the full node, debug console, and masternode controls.
+
+## Back up your wallet
+
+Your coins live on the blockchain; your **keys** live in the wallet. If you lose the keys, the coins are gone.
+
+1. Write down your recovery phrase (mobile) the moment you create the wallet, and store it offline.
+2. On desktop, back up `wallet.dat` and keep a copy somewhere safe. Re-back-up after creating new addresses.
+3. Never share your recovery phrase or private keys with anyone — no support agent will ever ask for them.
+
+## Addresses
+
+| Network | Prefix | Example |
+|---|---|---|
+| Mainnet | `F` | `F…` |
+| Testnet | `T` | `T…` |
+
+Receiving WFAIR instead? That lives in a **Base** (EVM) wallet, not FAIRWallet — see [Get FAIR](/developers/docs/faircoin/get-fair) and the [bridge](/developers/docs/faircoin/bridge).

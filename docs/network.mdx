@@ -1,0 +1,66 @@
+---
+title: Network reference
+description: FairCoin chain parameters, ports, block rewards, and explorer.
+order: 7
+---
+
+# Network reference
+
+The technical parameters of the FairCoin network, for node operators, integrators, and the curious.
+
+## Chain parameters
+
+| | |
+|---|---|
+| **Ticker** | FAIR |
+| **Algorithm** | Quark |
+| **Consensus** | PoW + PoS hybrid |
+| **Block time** | 120 seconds |
+| **Max supply** | 33,000,000 FAIR |
+| **Premine** | 5,000,000 FAIR (block 1) |
+| **Masternode collateral** | 5,000 FAIR |
+| **Min stake age** | 2 hours |
+| **Address prefix** | `F` (mainnet) · `T` (testnet) |
+
+## Ports
+
+| | Mainnet | Testnet |
+|---|---|---|
+| **P2P** | 46372 | 46374 |
+| **RPC** | 46373 | 46375 |
+
+## Block rewards
+
+Rewards start with a short PoW mining phase, switch to PoS staking, then halve roughly every two years toward a permanent floor.
+
+| Phase | Block range | Reward | Approx. duration |
+|---|---|---|---|
+| Premine | 1 | 5,000,000 FAIR | instant |
+| PoW mining | 2 – 10,000 | 10 FAIR | ~14 days |
+| PoS staking | 10,001 – 525,599 | 10 FAIR | ~2 years |
+| 1st halving | 525,600 – 1,051,199 | 5 FAIR | ~2 years |
+| 2nd halving | 1,051,200 – 1,576,799 | 2.5 FAIR | ~2 years |
+| 3rd+ halving | 1,576,800+ | 1.25 FAIR (floor) | permanent |
+
+Block rewards are shared between stakers/miners and [masternodes](/developers/docs/faircoin/masternodes).
+
+## Wrapped token (Base)
+
+| | |
+|---|---|
+| **Token** | WFAIR (ERC-20) |
+| **Chain** | Base |
+| **Backing** | 1:1 with native FAIR |
+| **Address** | [`0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3`](https://basescan.org/address/0xF2853CedDF47A05Fee0B4b24DFf2925d59737fb3) |
+
+See the [WFAIR bridge](/developers/docs/faircoin/bridge) for details.
+
+## Explorer & status
+
+- **Block explorer** — [explorer.fairco.in](https://explorer.fairco.in)
+- **Network stats** — [explorer.fairco.in/stats](https://explorer.fairco.in/stats)
+- **Masternodes** — [explorer.fairco.in/masternodes](https://explorer.fairco.in/masternodes)
+
+## Source
+
+FairCoin Core (MIT-licensed) lives at [github.com/FairCoinOfficial/FairCoin](https://github.com/FairCoinOfficial/FairCoin). See its `doc/` directory for build guides, key generation, masternode configuration, Tor, and ZMQ.
