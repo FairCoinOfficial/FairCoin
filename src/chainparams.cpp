@@ -331,12 +331,17 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 //    timestamp before)
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
-    boost::assign::map_list_of(0, uint256("0x00000232cb134567cf85cd65748714df75d72fe4ce71cf77d3c3f8a9a1a576e6"));
+    boost::assign::map_list_of
+    (0, uint256("0x00000232cb134567cf85cd65748714df75d72fe4ce71cf77d3c3f8a9a1a576e6"))
+    (1, uint256("0x00000c7be1164f34a243d233c94ec23e6fdc76813ac94b720a624d4ed52c9f0c"))
+    (5000, uint256("0x000000001c5f95c383855c71fa5ee106efd0ce9b6c93198b55cd00f47c84126f"))
+    (10000, uint256("0x00000000a840c1a7ca180f542fa26beed769bf0a91ba60c65b1d3d60911308c0")) // last PoW block (PoW->PoS boundary)
+    (11000, uint256("0x9f6d23e28485c926d63e6a249f9983472f1e7bd467db56864a575891819ebd84"));
 static const Checkpoints::CCheckpointData mainCheckpointData = {
     &mapCheckpoints,
-    1744156800, // April 9, 2026 00:00:00 UTC
-    0,
-    0
+    1777017373, // block 10000 time (2026-04-24)
+    10005,      // total tx up to last checkpoint (approx)
+    500         // estimated tx per day after checkpoint
 };
 
 static Checkpoints::MapCheckpoints mapCheckpointsTestnet =
