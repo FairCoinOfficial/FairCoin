@@ -29,7 +29,7 @@
 #include <boost/thread.hpp>
 #include <boost/version.hpp>
 
-#if BOOST_VERSION >= 107300
+#if BOOST_VERSION >= 106000
 using namespace boost::placeholders;
 #endif
 
