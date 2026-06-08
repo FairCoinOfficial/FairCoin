@@ -15,7 +15,7 @@ CMainSignals& GetMainSignals()
 }
 
 void RegisterValidationInterface(CValidationInterface* pwalletIn) {
-#if BOOST_VERSION >= 107300
+#if BOOST_VERSION >= 106000
     using namespace boost::placeholders;
 #endif
     g_signals.UpdatedBlockTip.connect(boost::bind(&CValidationInterface::UpdatedBlockTip, pwalletIn, _1));
@@ -31,7 +31,7 @@ void RegisterValidationInterface(CValidationInterface* pwalletIn) {
 }
 
 void UnregisterValidationInterface(CValidationInterface* pwalletIn) {
-#if BOOST_VERSION >= 107300
+#if BOOST_VERSION >= 106000
     using namespace boost::placeholders;
 #endif
     g_signals.BlockFound.disconnect(boost::bind(&CValidationInterface::ResetRequestCount, pwalletIn, _1));
