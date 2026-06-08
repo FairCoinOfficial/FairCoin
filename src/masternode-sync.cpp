@@ -35,7 +35,7 @@ bool CMasternodeSync::IsBlockchainSynced()
     static int64_t lastProcess = GetTime();
 
     // if the last call to this function was more than 60 minutes ago (client was in sleep mode) reset the sync process
-    if (GetTime() - lastProcess > 60 * 60) {
+    if (GetTime() - lastProcess > GetArg("-maxtipage", 60 * 60)) {
         Reset();
         fBlockchainSynced = false;
     }
@@ -52,7 +52,7 @@ bool CMasternodeSync::IsBlockchainSynced()
     if (pindex == NULL) return false;
 
 
-    if (pindex->nTime + 60 * 60 < GetTime())
+    if (pindex->nTime + GetArg("-maxtipage", 60 * 60) < GetTime())
         return false;
 
     fBlockchainSynced = true;
@@ -237,13 +237,13 @@ void CMasternodeSync::Process()
     if (tick++ % MASTERNODE_SYNC_TIMEOUT != 0) return;
 
     if (IsSynced()) {
-        /* 
-            Resync if we lose all masternodes from sleep/wake or failure to sync originally
+        /*
+            Stay synced once finished. Previously this Reset() every tick whenever there were
+            0 enabled masternodes, which on a small/bootstrapping network (legitimately 0 MNs)
+            caused an endless resync loop so sync never stabilized. New masternodes are still
+            picked up via normal mnb processing; a restart re-syncs from scratch anyway.
         */
-        if (mnodeman.CountEnabled() == 0) {
-            Reset();
-        } else
-            return;
+        return;
     }
 
     //try syncing again
@@ -260,6 +260,16 @@ void CMasternodeSync::Process()
     // sporks synced but blockchain is not, wait until we're almost at a recent block to continue
     if (Params().NetworkID() != CBaseChainParams::REGTEST &&
         !IsBlockchainSynced() && RequestedMasternodeAssets > MASTERNODE_SYNC_SPORKS) return;
+
+    // Advance the sync asset by time when it stalls. On small/zero-masternode networks no peer
+    // ever returns LIST/MNW/BUDGET items, and the per-peer "fulfilled request" gating then leaves
+    // the asset stuck forever (so IsSynced() is never reached). When real data exists the normal
+    // data-driven transitions above fire well before this timeout, so this only affects the empty case.
+    if (RequestedMasternodeAssets >= MASTERNODE_SYNC_SPORKS &&
+        GetTime() - nAssetSyncStarted > MASTERNODE_SYNC_TIMEOUT * 5) {
+        GetNextAsset();
+        return;
+    }
 
     TRY_LOCK(cs_vNodes, lockRecv);
     if (!lockRecv) return;
