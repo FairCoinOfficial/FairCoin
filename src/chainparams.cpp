@@ -472,7 +472,9 @@ public:
         nMinerThreads = 0;
         nTargetTimespan = 1 * 60; // faircoin: 1 day
         nTargetSpacing = 1 * 60;  // faircoin: 1 minute
-        nLastPOWBlock = 200;
+        // Short PoW phase so a fresh testnet can be mined to PoS in minutes
+        // (mainnet is 10000). After this height blocks must be PoS.
+        nLastPOWBlock = 25;
         nMaturity = 15;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT

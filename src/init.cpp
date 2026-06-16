@@ -691,6 +691,14 @@ bool AppInit2(boost::thread_group& threadGroup)
     fLogTimestamps = GetBoolArg("-logtimestamps", true);
     fLogIPs = GetBoolArg("-logips", false);
 
+    // Testnet: shorten the minimum stake age so a freshly-bootstrapped chain
+    // starts producing PoS blocks within ~1 minute of the PoW phase instead of
+    // 2 hours. Mainnet keeps the default nStakeMinAge (7200s).
+    if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+        nStakeMinAge = 60;
+        LogPrintf("AppInit2 : testnet -> nStakeMinAge=%u\n", nStakeMinAge);
+    }
+
     if (mapArgs.count("-bind") || mapArgs.count("-whitebind")) {
         // when specifying an explicit binding address, you want to listen on it
         // even when -connect or -proxy is specified
