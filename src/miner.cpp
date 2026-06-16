@@ -476,6 +476,14 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
 
             while (chainActive.Tip()->nTime < 1471482000 || vNodes.empty() || pwallet->IsLocked() || !fMintableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
                 nLastCoinStakeSearchInterval = 0;
+                // Re-check for mintable coins while waiting. The initial check above
+                // runs once when the staker thread starts; without re-checking here a
+                // node that started with no stakeable coins (e.g. a freshly
+                // bootstrapped chain) would never begin staking until restarted.
+                if (GetTime() - nMintableLastCheck > 5 * 60) {
+                    nMintableLastCheck = GetTime();
+                    fMintableCoins = pwallet->MintableCoins();
+                }
                 MilliSleep(5000);
                 if (!fGenerateBitcoins && !fProofOfStake)
                     continue;

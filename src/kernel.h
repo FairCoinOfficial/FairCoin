@@ -9,7 +9,11 @@
 
 // MODIFIER_INTERVAL: time to elapse before new modifier is computed
 static const unsigned int MODIFIER_INTERVAL = 60;
-static const unsigned int MODIFIER_INTERVAL_TESTNET = 60;
+// Testnet uses a much smaller modifier interval so the stake-modifier selection
+// window (~33 min at 60) shrinks to a few minutes. This lets PoS bootstrap on a
+// freshly-mined short testnet chain instead of erroring with "Null pindexNext"
+// until ~33 min of block history exists. Testnet-only; mainnet keeps 60.
+static const unsigned int MODIFIER_INTERVAL_TESTNET = 6;
 extern unsigned int nModifierInterval;
 extern unsigned int getIntervalVersion(bool fTestNet);
 
