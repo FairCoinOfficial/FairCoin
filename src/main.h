@@ -12,11 +12,13 @@
 #include "config/faircoin-config.h"
 #endif
 
+#include "addressindex.h"
 #include "amount.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "coins.h"
 #include "net.h"
+#include "spentindex.h"
 #include "pow.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
@@ -58,6 +60,12 @@ static const unsigned int DEFAULT_BLOCK_MIN_SIZE = 0;
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
 /** Default for accepting alerts from the P2P network. */
 static const bool DEFAULT_ALERTS = true;
+/** Default for -addressindex */
+static const bool DEFAULT_ADDRESSINDEX = false;
+/** Default for -spentindex */
+static const bool DEFAULT_SPENTINDEX = false;
+/** Default for -timestampindex */
+static const bool DEFAULT_TIMESTAMPINDEX = false;
 /** The maximum size for transactions we're willing to relay/mine */
 static const unsigned int MAX_STANDARD_TX_SIZE = 100000;
 /** The maximum allowed number of signature check operations in a block (network rule) */
@@ -131,6 +139,9 @@ extern bool fImporting;
 extern bool fReindex;
 extern int nScriptCheckThreads;
 extern bool fTxIndex;
+extern bool fAddressIndex;
+extern bool fSpentIndex;
+extern bool fTimestampIndex;
 extern bool fIsBareMultisigStd;
 extern bool fCheckBlockIndex;
 extern unsigned int nCoinCacheSize;
@@ -221,6 +232,16 @@ bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 /** Retrieve a transaction (from memory pool, or from disk, if possible) */
 bool GetTransaction(const uint256& hash, CTransaction& tx, uint256& hashBlock, bool fAllowSlow = false);
+
+/** Functions for querying the optional address/spent/timestamp indexes (enabled with
+ *  -addressindex / -spentindex / -timestampindex). */
+bool GetTimestampIndex(const unsigned int& high, const unsigned int& low, std::vector<uint256>& hashes);
+bool GetSpentIndex(CSpentIndexKey& key, CSpentIndexValue& value);
+bool GetAddressIndex(uint160 addressHash, int type,
+                     std::vector<std::pair<CAddressIndexKey, CAmount> >& addressIndex,
+                     int start = 0, int end = 0);
+bool GetAddressUnspent(uint160 addressHash, int type,
+                       std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> >& unspentOutputs);
 /** Find the best known block, and make it the tip of the block chain */
 
 bool DisconnectBlocksAndReprocess(int blocks);

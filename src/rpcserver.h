@@ -243,6 +243,13 @@ extern json_spirit::Value verifychain(const json_spirit::Array& params, bool fHe
 extern json_spirit::Value getchaintips(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value invalidateblock(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value reconsiderblock(const json_spirit::Array& params, bool fHelp);
+
+extern json_spirit::Value getaddressmempool(const json_spirit::Array& params, bool fHelp); // in rpcaddressindex.cpp
+extern json_spirit::Value getaddressutxos(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getaddressdeltas(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getaddresstxids(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getaddressbalance(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getspentinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value obfuscation(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value spork(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value masternode(const json_spirit::Array& params, bool fHelp);

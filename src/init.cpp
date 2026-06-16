@@ -324,6 +324,9 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-sysperms", _("Create new files with system default permissions, instead of umask 077 (only effective with disabled wallet functionality)"));
 #endif
     strUsage += HelpMessageOpt("-txindex", strprintf(_("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)"), 0));
+    strUsage += HelpMessageOpt("-addressindex", strprintf(_("Maintain a full address index, used to query for the balance, txids and unspent outputs for addresses (default: %u)"), DEFAULT_ADDRESSINDEX));
+    strUsage += HelpMessageOpt("-spentindex", strprintf(_("Maintain a full spent index, used to query the spending txid and input index for an outpoint (default: %u)"), DEFAULT_SPENTINDEX));
+    strUsage += HelpMessageOpt("-timestampindex", strprintf(_("Maintain a timestamp index for block hashes, used to query blocks hashes by a range of timestamps (default: %u)"), DEFAULT_TIMESTAMPINDEX));
     strUsage += HelpMessageOpt("-forcestart", _("Attempt to force blockchain corruption recovery") + " " + _("on startup"));
 
     strUsage += HelpMessageGroup(_("Connection options:"));
@@ -1212,6 +1215,13 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
+    // Read the optional index flags into the globals before the block index is
+    // loaded, so that ConnectBlock/DisconnectBlock and the index-changed checks
+    // below see the requested configuration.
+    fAddressIndex = GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX);
+    fSpentIndex = GetBoolArg("-spentindex", DEFAULT_SPENTINDEX);
+    fTimestampIndex = GetBoolArg("-timestampindex", DEFAULT_TIMESTAMPINDEX);
+
     // cache size calculations
     size_t nTotalCache = (GetArg("-dbcache", nDefaultDbCache) << 20);
     if (nTotalCache < (nMinDbCache << 20))
@@ -1269,6 +1279,24 @@ bool AppInit2(boost::thread_group& threadGroup)
                 // Check for changed -txindex state
                 if (fTxIndex != GetBoolArg("-txindex", true)) {
                     strLoadError = _("You need to rebuild the database using -reindex to change -txindex");
+                    break;
+                }
+
+                // Check for changed -addressindex state
+                if (fAddressIndex != GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex to change -addressindex");
+                    break;
+                }
+
+                // Check for changed -spentindex state
+                if (fSpentIndex != GetBoolArg("-spentindex", DEFAULT_SPENTINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex to change -spentindex");
+                    break;
+                }
+
+                // Check for changed -timestampindex state
+                if (fTimestampIndex != GetBoolArg("-timestampindex", DEFAULT_TIMESTAMPINDEX)) {
+                    strLoadError = _("You need to rebuild the database using -reindex to change -timestampindex");
                     break;
                 }
 
