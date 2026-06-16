@@ -201,7 +201,9 @@ jobs:
         with:
           name: FairCoin ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          # Mark *-testnet* tags as prereleases so they never become releases/latest
+          # (the mainnet node tracks releases/latest). Normal v* tags stay full releases.
+          prerelease: ${{ contains(github.ref_name, '-testnet') }}
           generate_release_notes: true
           fail_on_unmatched_files: false
           files: |

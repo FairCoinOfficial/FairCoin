@@ -1617,8 +1617,14 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 int64_t GetBlockValue(int nHeight)
 {
-    if (nHeight == 1)
-        return 5000000 * COIN; // premine on block 1 (block 0 coinbase is unspendable by protocol)
+    // Premine is a one-time mainnet launch event (block 0 coinbase is unspendable
+    // by protocol). It is mainnet-only: a fresh testnet must be bootstrappable, but
+    // the miner pays GetBlockValue(1) while ConnectBlock validates against
+    // GetBlockValue(prev=0)=normal subsidy, so a premined block 1 is rejected on a
+    // brand-new chain. Excluding testnet lets testnet block 1 mint the normal reward
+    // and be mined; mainnet consensus is unchanged.
+    if (nHeight == 1 && Params().NetworkID() != CBaseChainParams::TESTNET)
+        return 5000000 * COIN;
 
     int halvings = nHeight / 525600; // halving every ~2 years (2-min blocks)
     int64_t nSubsidy = 10 * COIN;
