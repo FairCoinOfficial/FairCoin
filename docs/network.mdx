@@ -29,6 +29,17 @@ The technical parameters of the FairCoin network, for node operators, integrator
 | **P2P** | 46372 | 46374 |
 | **RPC** | 46373 | 46375 |
 
+## Testnet
+
+FairCoin Core supports a separate test network via the `-testnet` flag. Testnet runs its own genesis block, network magic, ports (P2P **46374**, default RPC **46375**), and `~/.faircoin/testnet*/` data directory, so it never mixes with mainnet.
+
+```bash
+./src/faircoind -testnet -daemon
+./src/faircoin-cli -testnet getinfo
+```
+
+A fresh testnet chain can be bootstrapped from the **`testnet-bootstrap`** branch, which carries testnet-only consensus tuning so the early blocks can be mined and staked quickly: a short PoW phase (`nLastPOWBlock = 25`), a 60-second `nStakeMinAge`, a `MODIFIER_INTERVAL_TESTNET` of 6, and the `fTestNet` startup fix. All of it is network-guarded and does not affect mainnet consensus.
+
 ## Block rewards
 
 Rewards start with a short PoW mining phase, switch to PoS staking, then halve roughly every two years toward a permanent floor.

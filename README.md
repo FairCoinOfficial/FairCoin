@@ -97,12 +97,20 @@ make -j$(nproc)
 # Start daemon with mining (PoW phase only)
 ./src/faircoind -daemon -gen=1
 
+# Start daemon with the address index (explorer / wallet RPCs)
+./src/faircoind -daemon -addressindex=1 -spentindex=1 -timestampindex=1 -txindex=1
+
+# Run on testnet
+./src/faircoind -testnet -daemon
+
 # Check status
 ./src/faircoin-cli getinfo
 
 # Stop
 ./src/faircoin-cli stop
 ```
+
+> Enabling the address index on a node that already has a chain requires a one-time `-reindex` (the daemon enforces this). See [docs/addressindex.mdx](docs/addressindex.mdx) for the flags and the six address RPCs.
 
 ---
 
@@ -134,6 +142,7 @@ See [Masternode Guide](doc/guide-startmany.md) and [Windows Guide](doc/windows_m
 | Masternode Multi-Setup | [doc/guide-startmany.md](doc/guide-startmany.md) |
 | Tor Setup | [doc/tor.md](doc/tor.md) |
 | Developer Notes | [doc/developer-notes.md](doc/developer-notes.md) |
+| Address Index (RPCs) | [docs/addressindex.mdx](docs/addressindex.mdx) |
 | Release Notes | [doc/release-notes.md](doc/release-notes.md) |
 
 ---

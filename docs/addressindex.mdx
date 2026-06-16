@@ -1,0 +1,178 @@
+---
+title: Address index
+description: Enable the address/spent/timestamp indexes and query FairCoin balances, UTXOs, and history over RPC.
+order: 8
+---
+
+# Address index
+
+By default a FairCoin node only tracks the addresses in its own wallet. The **address index** (added in **v3.0.6**) builds an extra on-disk index that maps every address to its outputs, so you can query the balance, UTXOs, and full transaction history of *any* address over RPC — the foundation for block explorers and non-custodial wallet tooling.
+
+<Badge>v3.0.6+</Badge> <Badge>RPC</Badge> <Badge>opt-in</Badge>
+
+## Enabling the indexes
+
+Start `faircoind` with the index flags you need:
+
+```bash
+./src/faircoind -daemon \
+    -addressindex=1 \
+    -spentindex=1 \
+    -timestampindex=1 \
+    -txindex=1
+```
+
+Or set them in `~/.faircoin/faircoin.conf`:
+
+```ini
+addressindex=1
+spentindex=1
+timestampindex=1
+txindex=1
+```
+
+| Flag | Default | Enables |
+|---|---|---|
+| `-addressindex=1` | off | balance, UTXO, txid, and delta queries by address |
+| `-spentindex=1` | off | `getspentinfo` — find where an output was spent |
+| `-timestampindex=1` | off | look up block hashes by a range of timestamps |
+
+`-txindex=1` (a full transaction index) is recommended alongside these so transactions can be looked up by id.
+
+### Reindex required when changing index state
+
+The indexes are built as blocks are connected, so toggling any of them on an **existing** chain requires a one-time full rebuild. The daemon enforces this: if it detects that `-addressindex`, `-spentindex`, or `-timestampindex` changed since the last run it refuses to start with, for example:
+
+```
+You need to rebuild the database using -reindex to change -addressindex
+```
+
+Restart once with `-reindex` to build the index over the existing blocks:
+
+```bash
+./src/faircoind -daemon -reindex -addressindex=1 -spentindex=1 -timestampindex=1 -txindex=1
+```
+
+The reindex is a one-time cost — on later restarts you keep the flags but drop `-reindex`. A node that has the indexes enabled from genesis (a fresh data directory) never needs the reindex.
+
+## RPCs
+
+All address RPCs take a JSON object with an `addresses` array (one or more base58check addresses). Amounts are in **satoshis** (1 FAIR = 100,000,000 satoshis). The examples below use `faircoin-cli`.
+
+### getaddressbalance
+
+Returns the current balance and lifetime received total for the given addresses.
+
+```bash
+faircoin-cli getaddressbalance '{"addresses": ["FAirAddress"]}'
+```
+
+```json
+{
+  "balance": 1234500000,
+  "received": 5678900000
+}
+```
+
+### getaddressutxos
+
+Returns every unspent output for the given addresses, sorted by block height.
+
+```bash
+faircoin-cli getaddressutxos '{"addresses": ["FAirAddress"]}'
+```
+
+```json
+[
+  {
+    "address": "FAirAddress",
+    "txid": "…",
+    "outputIndex": 0,
+    "script": "76a914…88ac",
+    "satoshis": 1234500000,
+    "height": 123456
+  }
+]
+```
+
+### getaddresstxids
+
+Returns the ids of all transactions that touch the given addresses. Accepts optional `start` / `end` block heights to bound the range.
+
+```bash
+faircoin-cli getaddresstxids '{"addresses": ["FAirAddress"]}'
+faircoin-cli getaddresstxids '{"addresses": ["FAirAddress"], "start": 100000, "end": 123456}'
+```
+
+```json
+[
+  "…txid1…",
+  "…txid2…"
+]
+```
+
+### getaddressdeltas
+
+Returns every balance change (input/output delta) for the given addresses, with the txid, height, and signed satoshi amount. Also accepts optional `start` / `end` heights.
+
+```bash
+faircoin-cli getaddressdeltas '{"addresses": ["FAirAddress"]}'
+```
+
+```json
+[
+  {
+    "satoshis": 1234500000,
+    "txid": "…",
+    "index": 0,
+    "blockindex": 1,
+    "height": 123456,
+    "address": "FAirAddress"
+  }
+]
+```
+
+A negative `satoshis` is a spend.
+
+### getaddressmempool
+
+Like `getaddressdeltas`, but for unconfirmed transactions currently in the mempool.
+
+```bash
+faircoin-cli getaddressmempool '{"addresses": ["FAirAddress"]}'
+```
+
+```json
+[
+  {
+    "address": "FAirAddress",
+    "txid": "…",
+    "index": 0,
+    "satoshis": 1234500000,
+    "timestamp": 1718500000
+  }
+]
+```
+
+When the entry is a spend it also includes `prevtxid` and `prevout`.
+
+### getspentinfo
+
+Given a transaction output, returns the transaction and input index that spent it. Requires `-spentindex=1`.
+
+```bash
+faircoin-cli getspentinfo '{"txid": "0437cd7f8525ceed2324359c2d0ba26006d92d85", "index": 0}'
+```
+
+```json
+{
+  "txid": "…spending txid…",
+  "index": 0,
+  "height": 123456
+}
+```
+
+## See also
+
+- [Run a node](/developers/docs/faircoin/run-a-node) — build and run `faircoind`.
+- [Network reference](/developers/docs/faircoin/network) — ports, chain parameters, and testnet.
