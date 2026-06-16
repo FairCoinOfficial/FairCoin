@@ -691,12 +691,18 @@ bool AppInit2(boost::thread_group& threadGroup)
     fLogTimestamps = GetBoolArg("-logtimestamps", true);
     fLogIPs = GetBoolArg("-logips", false);
 
-    // Testnet: shorten the minimum stake age so a freshly-bootstrapped chain
-    // starts producing PoS blocks within ~1 minute of the PoW phase instead of
-    // 2 hours. Mainnet keeps the default nStakeMinAge (7200s).
+    // Testnet staking setup. kernel.cpp's fTestNet global is hardcoded false at
+    // static-init (before the network is known), so the stake-modifier selection
+    // interval would always use the mainnet value (~33 min of chain history) and a
+    // freshly-bootstrapped testnet could never compute a kernel ("Null pindexNext").
+    // Set it true here so getIntervalVersion() uses MODIFIER_INTERVAL_TESTNET. Also
+    // shorten the minimum stake age so PoS starts ~1 min after the PoW phase rather
+    // than 2 hours. Mainnet keeps fTestNet=false and nStakeMinAge=7200 (testnet-only).
     if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+        extern bool fTestNet;
+        fTestNet = true;
         nStakeMinAge = 60;
-        LogPrintf("AppInit2 : testnet -> nStakeMinAge=%u\n", nStakeMinAge);
+        LogPrintf("AppInit2 : testnet -> fTestNet=1, nStakeMinAge=%u\n", nStakeMinAge);
     }
 
     if (mapArgs.count("-bind") || mapArgs.count("-whitebind")) {
