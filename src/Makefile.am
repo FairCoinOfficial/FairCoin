@@ -75,10 +75,12 @@ endif
 # faircoin core #
 BITCOIN_CORE_H = \
   activemasternode.h \
+  addressindex.h \
   addrman.h \
   alert.h \
   allocators.h \
   amount.h \
+  spentindex.h \
   base58.h \
   bip38.h \
   bloom.h \
@@ -197,6 +199,7 @@ libbitcoin_server_a_SOURCES = \
   noui.cpp \
   pow.cpp \
   rest.cpp \
+  rpcaddressindex.cpp \
   rpcblockchain.cpp \
   rpcmasternode.cpp \
   rpcmasternode-budget.cpp \

@@ -112,6 +112,92 @@ enum {
 
 
 /*
+ * Lowest-level serialization and conversion.
+ * These are used by the address/spent/timestamp indexes, whose keys must be
+ * serialized in a deterministic byte order (big-endian for sortable fields)
+ * so that LevelDB range scans return entries in the desired order.
+ */
+template <typename Stream>
+inline void ser_writedata8(Stream& s, uint8_t obj)
+{
+    s.write((char*)&obj, 1);
+}
+template <typename Stream>
+inline void ser_writedata16(Stream& s, uint16_t obj)
+{
+    unsigned char buf[2];
+    buf[0] = (unsigned char)(obj & 0xff);
+    buf[1] = (unsigned char)((obj >> 8) & 0xff);
+    s.write((char*)buf, 2);
+}
+template <typename Stream>
+inline void ser_writedata32(Stream& s, uint32_t obj)
+{
+    unsigned char buf[4];
+    buf[0] = (unsigned char)(obj & 0xff);
+    buf[1] = (unsigned char)((obj >> 8) & 0xff);
+    buf[2] = (unsigned char)((obj >> 16) & 0xff);
+    buf[3] = (unsigned char)((obj >> 24) & 0xff);
+    s.write((char*)buf, 4);
+}
+template <typename Stream>
+inline void ser_writedata32be(Stream& s, uint32_t obj)
+{
+    unsigned char buf[4];
+    buf[0] = (unsigned char)((obj >> 24) & 0xff);
+    buf[1] = (unsigned char)((obj >> 16) & 0xff);
+    buf[2] = (unsigned char)((obj >> 8) & 0xff);
+    buf[3] = (unsigned char)(obj & 0xff);
+    s.write((char*)buf, 4);
+}
+template <typename Stream>
+inline void ser_writedata64(Stream& s, uint64_t obj)
+{
+    unsigned char buf[8];
+    for (int i = 0; i < 8; i++)
+        buf[i] = (unsigned char)((obj >> (8 * i)) & 0xff);
+    s.write((char*)buf, 8);
+}
+template <typename Stream>
+inline uint8_t ser_readdata8(Stream& s)
+{
+    uint8_t obj;
+    s.read((char*)&obj, 1);
+    return obj;
+}
+template <typename Stream>
+inline uint16_t ser_readdata16(Stream& s)
+{
+    unsigned char buf[2];
+    s.read((char*)buf, 2);
+    return (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
+}
+template <typename Stream>
+inline uint32_t ser_readdata32(Stream& s)
+{
+    unsigned char buf[4];
+    s.read((char*)buf, 4);
+    return (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
+}
+template <typename Stream>
+inline uint32_t ser_readdata32be(Stream& s)
+{
+    unsigned char buf[4];
+    s.read((char*)buf, 4);
+    return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) | ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+}
+template <typename Stream>
+inline uint64_t ser_readdata64(Stream& s)
+{
+    unsigned char buf[8];
+    s.read((char*)buf, 8);
+    uint64_t obj = 0;
+    for (int i = 0; i < 8; i++)
+        obj |= ((uint64_t)buf[i]) << (8 * i);
+    return obj;
+}
+
+/*
  * Basic Types
  */
 #define WRITEDATA(s, obj) s.write((char*)&(obj), sizeof(obj))

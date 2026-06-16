@@ -418,6 +418,158 @@ bool CTxMemPool::addUnchecked(const uint256& hash, const CTxMemPoolEntry& entry)
     return true;
 }
 
+/**
+ * Extract the address hash and type from a scriptPubKey for the mempool address
+ * index. Returns true and fills addressType (1 = P2PKH, 2 = P2SH) and addressHash
+ * for the standard script forms we index; returns false for everything else.
+ */
+static bool MempoolGetAddressIndexKey(const CScript& script, uint160& addressHash, int& addressType)
+{
+    if (script.IsPayToScriptHash()) {
+        addressHash = uint160(std::vector<unsigned char>(script.begin() + 2, script.begin() + 22));
+        addressType = 2;
+        return true;
+    }
+
+    CTxDestination dest;
+    if (ExtractDestination(script, dest)) {
+        const CKeyID* keyID = boost::get<CKeyID>(&dest);
+        if (keyID) {
+            addressHash = *keyID;
+            addressType = 1;
+            return true;
+        }
+        const CScriptID* scriptID = boost::get<CScriptID>(&dest);
+        if (scriptID) {
+            addressHash = *scriptID;
+            addressType = 2;
+            return true;
+        }
+    }
+
+    addressHash.SetNull();
+    addressType = 0;
+    return false;
+}
+
+void CTxMemPool::addAddressIndex(const CTxMemPoolEntry& entry, const CCoinsViewCache& view)
+{
+    LOCK(cs);
+    const CTransaction& tx = entry.GetTx();
+    std::vector<CMempoolAddressDeltaKey> inserted;
+
+    uint256 txhash = tx.GetHash();
+    for (unsigned int j = 0; j < tx.vin.size(); j++) {
+        const CTxIn input = tx.vin[j];
+        const CTxOut& prevout = view.GetOutputFor(input);
+        uint160 addressHash;
+        int addressType;
+        if (!MempoolGetAddressIndexKey(prevout.scriptPubKey, addressHash, addressType))
+            continue;
+        CMempoolAddressDeltaKey key(addressType, addressHash, txhash, j, 1);
+        CMempoolAddressDelta delta(entry.GetTime(), prevout.nValue * -1, input.prevout.hash, input.prevout.n);
+        mapAddress.insert(make_pair(key, delta));
+        inserted.push_back(key);
+    }
+
+    for (unsigned int k = 0; k < tx.vout.size(); k++) {
+        const CTxOut& out = tx.vout[k];
+        uint160 addressHash;
+        int addressType;
+        if (!MempoolGetAddressIndexKey(out.scriptPubKey, addressHash, addressType))
+            continue;
+        CMempoolAddressDeltaKey key(addressType, addressHash, txhash, k, 0);
+        mapAddress.insert(make_pair(key, CMempoolAddressDelta(entry.GetTime(), out.nValue)));
+        inserted.push_back(key);
+    }
+
+    mapAddressInserted.insert(make_pair(txhash, inserted));
+}
+
+bool CTxMemPool::getAddressIndex(const std::vector<std::pair<uint160, int> >& addresses,
+                                 std::vector<std::pair<CMempoolAddressDeltaKey, CMempoolAddressDelta> >& results)
+{
+    LOCK(cs);
+    for (std::vector<std::pair<uint160, int> >::const_iterator it = addresses.begin(); it != addresses.end(); it++) {
+        addressDeltaMap::iterator ait = mapAddress.lower_bound(CMempoolAddressDeltaKey((*it).second, (*it).first));
+        while (ait != mapAddress.end() && (*ait).first.addressBytes == (*it).first && (*ait).first.type == (*it).second) {
+            results.push_back(*ait);
+            ait++;
+        }
+    }
+    return true;
+}
+
+bool CTxMemPool::removeAddressIndex(const uint256 txhash)
+{
+    LOCK(cs);
+    addressDeltaMapInserted::iterator it = mapAddressInserted.find(txhash);
+
+    if (it != mapAddressInserted.end()) {
+        std::vector<CMempoolAddressDeltaKey> keys = (*it).second;
+        for (std::vector<CMempoolAddressDeltaKey>::iterator mit = keys.begin(); mit != keys.end(); mit++) {
+            mapAddress.erase(*mit);
+        }
+        mapAddressInserted.erase(it);
+    }
+
+    return true;
+}
+
+void CTxMemPool::addSpentIndex(const CTxMemPoolEntry& entry, const CCoinsViewCache& view)
+{
+    LOCK(cs);
+    const CTransaction& tx = entry.GetTx();
+    std::vector<CSpentIndexKey> inserted;
+
+    uint256 txhash = tx.GetHash();
+    for (unsigned int j = 0; j < tx.vin.size(); j++) {
+        const CTxIn input = tx.vin[j];
+        const CTxOut& prevout = view.GetOutputFor(input);
+        uint160 addressHash;
+        int addressType;
+        MempoolGetAddressIndexKey(prevout.scriptPubKey, addressHash, addressType);
+
+        CSpentIndexKey key = CSpentIndexKey(input.prevout.hash, input.prevout.n);
+        CSpentIndexValue value = CSpentIndexValue(txhash, j, -1, prevout.nValue, addressType, addressHash);
+
+        mapSpent.insert(make_pair(key, value));
+        inserted.push_back(key);
+    }
+
+    mapSpentInserted.insert(make_pair(txhash, inserted));
+}
+
+bool CTxMemPool::getSpentIndex(CSpentIndexKey& key, CSpentIndexValue& value)
+{
+    LOCK(cs);
+    mapSpentIndex::iterator it;
+
+    it = mapSpent.find(key);
+    if (it != mapSpent.end()) {
+        value = it->second;
+        return true;
+    }
+
+    return false;
+}
+
+bool CTxMemPool::removeSpentIndex(const uint256 txhash)
+{
+    LOCK(cs);
+    mapSpentIndexInserted::iterator it = mapSpentInserted.find(txhash);
+
+    if (it != mapSpentInserted.end()) {
+        std::vector<CSpentIndexKey> keys = (*it).second;
+        for (std::vector<CSpentIndexKey>::iterator mit = keys.begin(); mit != keys.end(); mit++) {
+            mapSpent.erase(*mit);
+        }
+        mapSpentInserted.erase(it);
+    }
+
+    return true;
+}
+
 
 void CTxMemPool::remove(const CTransaction& origTx, std::list<CTransaction>& removed, bool fRecursive)
 {
@@ -459,6 +611,8 @@ void CTxMemPool::remove(const CTransaction& origTx, std::list<CTransaction>& rem
             totalTxSize -= mapTx[hash].GetTxSize();
             mapTx.erase(hash);
             nTransactionsUpdated++;
+            removeAddressIndex(hash);
+            removeSpentIndex(hash);
         }
     }
 }
@@ -531,6 +685,10 @@ void CTxMemPool::clear()
     LOCK(cs);
     mapTx.clear();
     mapNextTx.clear();
+    mapAddress.clear();
+    mapAddressInserted.clear();
+    mapSpent.clear();
+    mapSpentInserted.clear();
     totalTxSize = 0;
     ++nTransactionsUpdated;
 }
