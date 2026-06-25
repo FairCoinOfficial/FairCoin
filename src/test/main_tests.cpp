@@ -21,6 +21,10 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
     nSubsidy = GetBlockValue(1);
     BOOST_CHECK_EQUAL(nSubsidy, 5000000 * COIN);
 
+    // Block 2 and later regular blocks return the standard reward.
+    nSubsidy = GetBlockValue(2);
+    BOOST_CHECK_EQUAL(nSubsidy, 10 * COIN);
+
     nSubsidy = GetBlockValue(10000);
     BOOST_CHECK_EQUAL(nSubsidy, 10 * COIN);
 
