@@ -2108,10 +2108,9 @@ bool CObfuscationSigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey)
     CTransaction txVin;
     uint256 hash;
     if (GetTransaction(vin.prevout.hash, txVin, hash, true)) {
-        BOOST_FOREACH (CTxOut out, txVin.vout) {
-            if (out.nValue == MASTER_NODE_AMOUNT * COIN) {
-                if (out.scriptPubKey == payee2) return true;
-            }
+        if (vin.prevout.n < txVin.vout.size()) {
+            const CTxOut& out = txVin.vout[vin.prevout.n];
+            return out.nValue == MASTER_NODE_AMOUNT * COIN && out.scriptPubKey == payee2;
         }
     }
 
