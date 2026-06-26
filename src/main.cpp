@@ -2623,6 +2623,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             REJECT_INVALID, "bad-cb-amount");
     }
 
+    if (pindex->nMoneySupply > Params().MaxMoneyOut()) {
+        return state.DoS(100,
+            error("ConnectBlock() : money supply exceeds maximum (actual=%s vs limit=%s)",
+                FormatMoney(pindex->nMoneySupply), FormatMoney(Params().MaxMoneyOut())),
+            REJECT_INVALID, "bad-money-supply");
+    }
+
     if (!control.Wait())
         return state.DoS(100, false);
     int64_t nTime2 = GetTimeMicros();
