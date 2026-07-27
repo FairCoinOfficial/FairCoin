@@ -1,0 +1,14 @@
+[Unit]
+Description=Run the FairCoin node liveness watchdog every 2 minutes
+
+[Timer]
+# First check shortly after boot, then every two minutes. The daemon's own
+# stale-tip retry fires at 10 minutes, so a two-minute cadence gives the
+# in-process fix several chances before the watchdog escalates to a restart.
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=15s
+Unit=faircoin-watchdog.service
+
+[Install]
+WantedBy=timers.target

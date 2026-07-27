@@ -1,0 +1,14 @@
+[Unit]
+Description=FairCoin node liveness watchdog (one-shot check)
+Documentation=file:/usr/local/share/faircoin/watchdog-README.md
+After=faircoind.service
+# Deliberately NOT Requires=faircoind.service: the watchdog must still run (and
+# restart the daemon) when faircoind is down.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/faircoin-watchdog
+# Peers dialled when nudging a stalled node back into sync. Override per host in
+# /etc/systemd/system/faircoin-watchdog.service.d/ rather than editing this file.
+Environment=NUDGE_PEERS=187.33.155.242:46372 80.240.127.240:46372 187.33.156.120:46372
+TimeoutStartSec=180

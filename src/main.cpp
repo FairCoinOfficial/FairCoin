@@ -288,6 +288,8 @@ struct CNodeState {
     CBlockIndex* pindexLastCommonBlock;
     //! Whether we've started headers synchronization with this peer.
     bool fSyncStarted;
+    //! When we sent this peer its sync request (`getblocks`), or 0 if we never did.
+    int64_t nSyncRequestTime;
     //! Since when we're stalling block download progress (in microseconds), or 0.
     int64_t nStallingSince;
     list<QueuedBlock> vBlocksInFlight;
@@ -304,6 +306,7 @@ struct CNodeState {
         hashLastUnknownBlock = uint256(0);
         pindexLastCommonBlock = NULL;
         fSyncStarted = false;
+        nSyncRequestTime = 0;
         nStallingSince = 0;
         nBlocksInFlight = 0;
         fPreferredDownload = false;
@@ -6074,10 +6077,31 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         if (pindexBestHeader == NULL)
             pindexBestHeader = chainActive.Tip();
         bool fFetch = state.fPreferredDownload || (nPreferredDownload == 0 && !pto->fClient && !pto->fOneShot); // Download if this is a nice peer, or we have no nice peers and this one might do.
+        // Our tip has gone stale if it is older than the retry interval. Blocks are announced by
+        // `inv` exactly ONCE per connection and the `getdata` we send in response is not tracked as
+        // in-flight, so a single lost announcement (or lost response) parks us at that height with
+        // live, silent peers: every later block is a child of the one we missed, and no peer will
+        // ever re-announce it. The sync request below is the only thing that can ask again, but it
+        // is one-shot per connection and `fSyncStarted` is otherwise released only on disconnect —
+        // which is why a stuck node used to stay stuck until it was restarted or handed a brand new
+        // peer. Releasing the latch on a stale tip turns that into self-healing.
+        const bool fTipStale = chainActive.Tip() != NULL &&
+                               chainActive.Tip()->GetBlockTime() < GetTime() - SYNC_REQUEST_RETRY_INTERVAL;
+        if (state.fSyncStarted && fTipStale && state.nSyncRequestTime != 0 &&
+            GetTime() - state.nSyncRequestTime > SYNC_REQUEST_RETRY_INTERVAL) {
+            LogPrintf("Re-requesting block sync from peer=%d: tip stale for %ds\n",
+                pto->id, GetTime() - chainActive.Tip()->GetBlockTime());
+            state.fSyncStarted = false;
+            nSyncStarted--;
+        }
+
         if (!state.fSyncStarted && !pto->fClient && fFetch /*&& !fImporting*/ && !fReindex) {
-            // Only actively request headers from a single peer, unless we're close to end of initial download.
-            if (nSyncStarted == 0 || pindexBestHeader->GetBlockTime() > GetAdjustedTime() - 6 * 60 * 60) { // NOTE: was "close to today" and 24h in Bitcoin
+            // Only actively request headers from a single peer, unless we're close to end of initial
+            // download — or our tip is stale, in which case the single peer holding the latch is
+            // exactly the one that stopped delivering, so another peer must be allowed to take over.
+            if (nSyncStarted == 0 || fTipStale || pindexBestHeader->GetBlockTime() > GetAdjustedTime() - 6 * 60 * 60) { // NOTE: was "close to today" and 24h in Bitcoin
                 state.fSyncStarted = true;
+                state.nSyncRequestTime = GetTime();
                 nSyncStarted++;
                 //CBlockIndex *pindexStart = pindexBestHeader->pprev ? pindexBestHeader->pprev : pindexBestHeader;
                 //LogPrint("net", "initial getheaders (%d) to peer=%d (startheight:%d)\n", pindexStart->nHeight, pto->id, pto->nStartingHeight);

@@ -94,6 +94,14 @@ static const int DEFAULT_SCRIPTCHECK_THREADS = 0;
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 16;
 /** Timeout in seconds during which a peer must stall block download progress before being disconnected. */
 static const unsigned int BLOCK_STALLING_TIMEOUT = 2;
+/** How long our tip may go unchanged before we re-issue the initial `getblocks` sync request.
+ *
+ *  Block announcement is inv-driven and a peer announces each block only ONCE per connection, while
+ *  the `getdata` we send in response is not tracked as in-flight — so a single lost announcement or
+ *  lost response leaves the node parked at that height with live, quiet peers and no retry path.
+ *  Re-asking once the tip is this stale is that missing retry path. It must stay comfortably above
+ *  the worst normal inter-block gap (target spacing is 120s) so a healthy node never re-requests. */
+static const int64_t SYNC_REQUEST_RETRY_INTERVAL = 10 * 60;
 /** Number of headers sent in one getheaders result. We rely on the assumption that if a peer sends
  *  less than this number, we reached their tip. Changing this value is a protocol upgrade. */
 static const unsigned int MAX_HEADERS_RESULTS = 2000;

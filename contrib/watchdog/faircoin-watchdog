@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+#
+# faircoin-watchdog — keeps a faircoind node advancing, unattended.
+#
+# WHY THIS EXISTS
+#
+# Block announcement on this network is inv-driven, and a peer announces each
+# block exactly ONCE per connection. `SendMessages` re-requests a stale tip
+# (SYNC_REQUEST_RETRY_INTERVAL in src/main.h), which recovers a node that merely
+# missed an announcement. This watchdog covers what that cannot: a daemon whose
+# message thread is wedged, or whose RPC has stopped answering entirely — states
+# where the process is alive, systemd sees nothing wrong, and the node silently
+# stops following the chain.
+#
+# ESCALATION LADDER (least invasive first)
+#
+#   1. tip stale + a peer is ahead   -> force fresh outbound connections
+#      (`addnode <peer> onetry`). A brand-new connection triggers a fresh sync
+#      request, which is what unsticks a node that stopped being told about
+#      blocks. Costs nothing and never interrupts service.
+#   2. still stale on the next run   -> `systemctl restart faircoind`.
+#   3. RPC unanswered N runs in a row -> `systemctl restart faircoind`.
+#
+# Restarts are rate-limited by RESTART_COOLDOWN so a genuinely broken node
+# cannot enter a restart loop; every action is logged to the journal.
+#
+# SAFETY
+#
+# The watchdog never restarts on tip age alone. A node that is legitimately
+# catching up has an old tip but a RISING height, so height progress is checked
+# first and always wins. It also requires evidence that some peer is actually
+# ahead of us — if the whole network stopped producing blocks, the correct
+# behaviour is to do nothing.
+
+set -uo pipefail
+
+DATADIR="${FAIRCOIN_DATADIR:-/root/.faircoin}"
+CLI="${FAIRCOIN_CLI:-/usr/local/bin/faircoin-cli}"
+SERVICE="${FAIRCOIN_SERVICE:-faircoind}"
+STATE_FILE="${FAIRCOIN_WATCHDOG_STATE:-/run/faircoin-watchdog.state}"
+
+# A tip older than this with a peer ahead of us means we are not following the
+# chain. Target spacing is 120s, and the daemon's own retry fires at 10 min, so
+# this leaves the in-process fix a full cycle to work before we intervene.
+STALE_TIP_SECONDS="${STALE_TIP_SECONDS:-1200}"
+# Consecutive failed RPC probes before we treat the daemon as dead.
+RPC_FAILURES_BEFORE_RESTART="${RPC_FAILURES_BEFORE_RESTART:-3}"
+# Minimum seconds between two restarts we initiate.
+RESTART_COOLDOWN="${RESTART_COOLDOWN:-1800}"
+# Peers to dial when nudging. Space-separated host:port list.
+NUDGE_PEERS="${NUDGE_PEERS:-}"
+
+log() { logger -t faircoin-watchdog -- "$*"; echo "faircoin-watchdog: $*"; }
+
+cli() { timeout 25 "$CLI" -datadir="$DATADIR" "$@" 2>/dev/null; }
+
+# state file: "<lastHeight> <rpcFailures> <lastRestartEpoch> <nudgedAtEpoch>"
+read_state() {
+    if [[ -r "$STATE_FILE" ]]; then
+        read -r LAST_HEIGHT RPC_FAILURES LAST_RESTART NUDGED_AT < "$STATE_FILE" || true
+    fi
+    LAST_HEIGHT="${LAST_HEIGHT:--1}"
+    RPC_FAILURES="${RPC_FAILURES:-0}"
+    LAST_RESTART="${LAST_RESTART:-0}"
+    NUDGED_AT="${NUDGED_AT:-0}"
+}
+
+write_state() {
+    printf '%s %s %s %s\n' "$1" "$2" "$3" "$4" > "$STATE_FILE"
+}
+
+restart_daemon() {
+    local reason="$1" now="$2"
+    if (( now - LAST_RESTART < RESTART_COOLDOWN )); then
+        log "WOULD RESTART ($reason) but the last restart was $((now - LAST_RESTART))s ago; cooling down"
+        return 1
+    fi
+    log "RESTARTING $SERVICE: $reason"
+    systemctl restart "$SERVICE"
+    return 0
+}
+
+main() {
+    local now height tip_hash tip_time tip_age peer_best
+    now="$(date +%s)"
+    read_state
+
+    height="$(cli getblockcount)"
+    if ! [[ "$height" =~ ^[0-9]+$ ]]; then
+        RPC_FAILURES=$(( RPC_FAILURES + 1 ))
+        log "RPC probe failed ($RPC_FAILURES/$RPC_FAILURES_BEFORE_RESTART)"
+        if (( RPC_FAILURES >= RPC_FAILURES_BEFORE_RESTART )); then
+            if restart_daemon "RPC unresponsive for $RPC_FAILURES consecutive probes" "$now"; then
+                write_state "$LAST_HEIGHT" 0 "$now" "$NUDGED_AT"
+                return 0
+            fi
+        fi
+        write_state "$LAST_HEIGHT" "$RPC_FAILURES" "$LAST_RESTART" "$NUDGED_AT"
+        return 0
+    fi
+
+    # Height is rising: the node is following the chain (or catching up). Nothing
+    # else matters, and this check must come before any staleness reasoning.
+    if (( height > LAST_HEIGHT )); then
+        write_state "$height" 0 "$LAST_RESTART" 0
+        return 0
+    fi
+
+    tip_hash="$(cli getbestblockhash)"
+    tip_time="$(cli getblock "$tip_hash" | sed -n 's/.*"time" *: *\([0-9]*\).*/\1/p' | head -1)"
+    [[ "$tip_time" =~ ^[0-9]+$ ]] || { write_state "$height" 0 "$LAST_RESTART" "$NUDGED_AT"; return 0; }
+    tip_age=$(( now - tip_time ))
+
+    if (( tip_age < STALE_TIP_SECONDS )); then
+        write_state "$height" 0 "$LAST_RESTART" 0
+        return 0
+    fi
+
+    # Only act when somebody demonstrably has more chain than we do. If no peer is
+    # ahead, the network itself is quiet and restarting would achieve nothing.
+    peer_best="$(cli getpeerinfo | sed -n 's/.*"\(startingheight\|synced_headers\)" *: *\([0-9-]*\).*/\2/p' | sort -n | tail -1)"
+    [[ "$peer_best" =~ ^[0-9]+$ ]] || peer_best=0
+
+    if (( peer_best <= height )); then
+        log "tip is ${tip_age}s old at height $height but no peer is ahead (best peer: $peer_best) — network is quiet, taking no action"
+        write_state "$height" 0 "$LAST_RESTART" "$NUDGED_AT"
+        return 0
+    fi
+
+    # Step 1: a fresh outbound connection re-triggers the sync request.
+    if (( NUDGED_AT == 0 )); then
+        log "STALLED: height $height unchanged, tip ${tip_age}s old, peer at $peer_best — forcing fresh connections"
+        for peer in $NUDGE_PEERS; do
+            cli addnode "$peer" onetry >/dev/null
+        done
+        write_state "$height" 0 "$LAST_RESTART" "$now"
+        return 0
+    fi
+
+    # Step 2: the nudge did not help.
+    log "STILL STALLED after a nudge $((now - NUDGED_AT))s ago: height $height, tip ${tip_age}s old, peer at $peer_best"
+    if restart_daemon "stalled at height $height while peers are at $peer_best" "$now"; then
+        write_state "$height" 0 "$now" 0
+    else
+        write_state "$height" 0 "$LAST_RESTART" "$NUDGED_AT"
+    fi
+}
+
+main "$@"
