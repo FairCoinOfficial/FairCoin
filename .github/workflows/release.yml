@@ -29,11 +29,18 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Package tar.gz
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          mkdir -p faircoin-${{ github.ref_name }}-linux-x86_64
-          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-linux-x86_64/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-linux-x86_64/
-          tar czf faircoin-${{ github.ref_name }}-linux-x86_64.tar.gz faircoin-${{ github.ref_name }}-linux-x86_64/
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          PKG_DIR="faircoin-${RELEASE_TAG}-linux-x86_64"
+          mkdir -p "$PKG_DIR"
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$PKG_DIR/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$PKG_DIR/"
+          tar czf "${PKG_DIR}.tar.gz" "$PKG_DIR/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -65,19 +72,25 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Create .deb package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
           PKG="faircoin_${VERSION}_amd64"
-          mkdir -p $PKG/DEBIAN $PKG/usr/bin $PKG/usr/share/doc/faircoin
+          mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/usr/share/doc/faircoin"
 
           # Binaries
-          cp src/faircoind src/faircoin-cli src/faircoin-tx $PKG/usr/bin/
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$PKG/usr/bin/"
 
           # Docs
-          cp COPYING README.md doc/GENERATE-KEYS.md $PKG/usr/share/doc/faircoin/
+          cp COPYING README.md doc/GENERATE-KEYS.md "$PKG/usr/share/doc/faircoin/"
 
           # Control file (statically linked — only libc6 needed)
-          cat > $PKG/DEBIAN/control <<EOF
+          cat > "$PKG/DEBIAN/control" <<EOF
           Package: faircoin
           Version: ${VERSION}
           Section: net
@@ -92,8 +105,8 @@ jobs:
           Homepage: https://fairco.in
           EOF
 
-          dpkg-deb --build --root-owner-group $PKG
-          ls -la $PKG.deb
+          dpkg-deb --build --root-owner-group "$PKG"
+          ls -la "$PKG.deb"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -130,11 +143,18 @@ jobs:
           x86_64-w64-mingw32-strip src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe
 
       - name: Package Windows ZIP
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          mkdir -p faircoin-${{ github.ref_name }}-windows-x86_64
-          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe faircoin-${{ github.ref_name }}-windows-x86_64/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-windows-x86_64/
-          zip -r faircoin-${{ github.ref_name }}-windows-x86_64.zip faircoin-${{ github.ref_name }}-windows-x86_64/
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          PKG_DIR="faircoin-${RELEASE_TAG}-windows-x86_64"
+          mkdir -p "$PKG_DIR"
+          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe "$PKG_DIR/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$PKG_DIR/"
+          zip -r "${PKG_DIR}.zip" "$PKG_DIR/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -165,12 +185,19 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Package macOS
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
           ARCH=$(uname -m)
-          mkdir -p faircoin-${{ github.ref_name }}-macos-${ARCH}
-          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-macos-${ARCH}/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-macos-${ARCH}/
-          tar czf faircoin-${{ github.ref_name }}-macos-${ARCH}.tar.gz faircoin-${{ github.ref_name }}-macos-${ARCH}/
+          PKG_DIR="faircoin-${RELEASE_TAG}-macos-${ARCH}"
+          mkdir -p "$PKG_DIR"
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$PKG_DIR/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$PKG_DIR/"
+          tar czf "${PKG_DIR}.tar.gz" "$PKG_DIR/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
