@@ -5,12 +5,28 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 jobs:
   # ---------- Linux tar.gz ----------
   build-linux:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate release tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
@@ -29,23 +45,39 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Package tar.gz
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          mkdir -p faircoin-${{ github.ref_name }}-linux-x86_64
-          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-linux-x86_64/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-linux-x86_64/
-          tar czf faircoin-${{ github.ref_name }}-linux-x86_64.tar.gz faircoin-${{ github.ref_name }}-linux-x86_64/
+          package_dir="faircoin-${TAG_NAME}-linux-x86_64"
+          mkdir -p "$package_dir"
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$package_dir/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$package_dir/"
+          tar czf "${package_dir}.tar.gz" "$package_dir/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-tarball
-          path: faircoin-${{ github.ref_name }}-linux-x86_64.tar.gz
+          path: faircoin-v[0-9]*.[0-9]*.[0-9]*-linux-x86_64.tar.gz
 
   # ---------- Debian .deb package ----------
   build-deb:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate release tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
@@ -65,19 +97,21 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Create .deb package
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${TAG_NAME#v}"
           PKG="faircoin_${VERSION}_amd64"
-          mkdir -p $PKG/DEBIAN $PKG/usr/bin $PKG/usr/share/doc/faircoin
+          mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/usr/share/doc/faircoin"
 
           # Binaries
-          cp src/faircoind src/faircoin-cli src/faircoin-tx $PKG/usr/bin/
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$PKG/usr/bin/"
 
           # Docs
-          cp COPYING README.md doc/GENERATE-KEYS.md $PKG/usr/share/doc/faircoin/
+          cp COPYING README.md doc/GENERATE-KEYS.md "$PKG/usr/share/doc/faircoin/"
 
           # Control file (statically linked — only libc6 needed)
-          cat > $PKG/DEBIAN/control <<EOF
+          cat > "$PKG/DEBIAN/control" <<EOF
           Package: faircoin
           Version: ${VERSION}
           Section: net
@@ -92,8 +126,8 @@ jobs:
           Homepage: https://fairco.in
           EOF
 
-          dpkg-deb --build --root-owner-group $PKG
-          ls -la $PKG.deb
+          dpkg-deb --build --root-owner-group "$PKG"
+          ls -la "$PKG.deb"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -106,6 +140,19 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate release tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
 
       - name: Install cross-compile dependencies
         run: |
@@ -130,23 +177,39 @@ jobs:
           x86_64-w64-mingw32-strip src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe
 
       - name: Package Windows ZIP
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          mkdir -p faircoin-${{ github.ref_name }}-windows-x86_64
-          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe faircoin-${{ github.ref_name }}-windows-x86_64/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-windows-x86_64/
-          zip -r faircoin-${{ github.ref_name }}-windows-x86_64.zip faircoin-${{ github.ref_name }}-windows-x86_64/
+          package_dir="faircoin-${TAG_NAME}-windows-x86_64"
+          mkdir -p "$package_dir"
+          cp src/faircoind.exe src/faircoin-cli.exe src/faircoin-tx.exe src/qt/faircoin-qt.exe "$package_dir/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$package_dir/"
+          zip -r "${package_dir}.zip" "$package_dir/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-zip
-          path: faircoin-${{ github.ref_name }}-windows-x86_64.zip
+          path: faircoin-v[0-9]*.[0-9]*.[0-9]*-windows-x86_64.zip
 
   # ---------- macOS (native build) ----------
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate release tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
+          esac
+          if ! printf '%s' "$TAG_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "Release tag must use SemVer format vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
@@ -165,23 +228,25 @@ jobs:
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
       - name: Package macOS
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           ARCH=$(uname -m)
-          mkdir -p faircoin-${{ github.ref_name }}-macos-${ARCH}
-          cp src/faircoind src/faircoin-cli src/faircoin-tx faircoin-${{ github.ref_name }}-macos-${ARCH}/
-          cp COPYING README.md doc/GENERATE-KEYS.md faircoin-${{ github.ref_name }}-macos-${ARCH}/
-          tar czf faircoin-${{ github.ref_name }}-macos-${ARCH}.tar.gz faircoin-${{ github.ref_name }}-macos-${ARCH}/
+          package_dir="faircoin-${TAG_NAME}-macos-${ARCH}"
+          mkdir -p "$package_dir"
+          cp src/faircoind src/faircoin-cli src/faircoin-tx "$package_dir/"
+          cp COPYING README.md doc/GENERATE-KEYS.md "$package_dir/"
+          tar czf "${package_dir}.tar.gz" "$package_dir/"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-tarball
-          path: faircoin-${{ github.ref_name }}-macos-*.tar.gz
+          path: faircoin-v[0-9]*.[0-9]*.[0-9]*-macos-*.tar.gz
 
   # ---------- Create GitHub Release ----------
   create-release:
     needs: [build-linux, build-deb, build-windows, build-macos]
-    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: write
