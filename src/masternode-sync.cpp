@@ -263,11 +263,22 @@ void CMasternodeSync::Process()
 
     // Advance the sync asset by time when it stalls. On small/zero-masternode networks no peer
     // ever returns LIST/MNW/BUDGET items, and the per-peer "fulfilled request" gating then leaves
-    // the asset stuck forever (so IsSynced() is never reached). When real data exists the normal
-    // data-driven transitions above fire well before this timeout, so this only affects the empty case.
+    // the asset stuck forever (so IsSynced() is never reached). Preserve the SPORK_8-enforced
+    // failure semantics for missing masternode list/winner data; only fail open for those stages
+    // when masternode payment enforcement is inactive.
     if (RequestedMasternodeAssets >= MASTERNODE_SYNC_SPORKS &&
         GetTime() - nAssetSyncStarted > MASTERNODE_SYNC_TIMEOUT * 5) {
-        GetNextAsset();
+        if (IsSporkActive(SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT) &&
+            ((RequestedMasternodeAssets == MASTERNODE_SYNC_LIST && lastMasternodeList == 0) ||
+             (RequestedMasternodeAssets == MASTERNODE_SYNC_MNW && lastMasternodeWinner == 0))) {
+            LogPrintf("CMasternodeSync::Process - ERROR - Sync has failed, will retry later\n");
+            RequestedMasternodeAssets = MASTERNODE_SYNC_FAILED;
+            RequestedMasternodeAttempt = 0;
+            lastFailure = GetTime();
+            nCountFailures++;
+        } else {
+            GetNextAsset();
+        }
         return;
     }
 
