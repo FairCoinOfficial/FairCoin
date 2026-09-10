@@ -20,6 +20,15 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CHAINPARAMS="$SCRIPT_DIR/src/chainparams.cpp"
+GENESIS_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/faircoin-genesis.XXXXXX")"
+chmod 700 "$GENESIS_TMPDIR"
+GENESIS_MINER="$GENESIS_TMPDIR/faircoin_genesis_miner.py"
+GENESIS_RESULTS="$GENESIS_TMPDIR/faircoin_genesis_results.txt"
+cleanup_genesis_tmp() {
+    rm -rf "$GENESIS_TMPDIR"
+}
+trap cleanup_genesis_tmp EXIT
+export GENESIS_RESULTS
 
 echo ""
 echo "  ======================================================"
@@ -74,7 +83,7 @@ if ! command -v python3 &>/dev/null; then
 fi
 
 # Create the Python genesis miner
-cat > /tmp/faircoin_genesis_miner.py << 'PYEOF'
+cat > "$GENESIS_MINER" << 'PYEOF'
 #!/usr/bin/env python3
 """
 FairCoin Genesis Block Miner
@@ -86,6 +95,7 @@ what GetHash() uses for the block header.
 """
 
 import hashlib
+import os
 import struct
 import time
 import sys
@@ -312,7 +322,7 @@ print(f'assert(hashGenesisBlock == uint256("0x{regtest_hash}"));')
 print()
 
 # Write results to file for the shell script to read
-with open("/tmp/faircoin_genesis_results.txt", "w") as f:
+with open(os.environ["GENESIS_RESULTS"], "w") as f:
     f.write(f"MAINNET_NONCE={mainnet_nonce}\n")
     f.write(f"MAINNET_HASH={mainnet_hash}\n")
     f.write(f"MAINNET_MERKLE={mainnet_merkle}\n")
@@ -331,7 +341,7 @@ if grep -q "genesis.nNonce = 0;" "$CHAINPARAMS" 2>/dev/null; then
     echo "  (This may take a few minutes depending on your CPU)"
     echo ""
 
-    python3 /tmp/faircoin_genesis_miner.py
+    python3 "$GENESIS_MINER"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: Genesis mining failed!"
@@ -339,7 +349,7 @@ if grep -q "genesis.nNonce = 0;" "$CHAINPARAMS" 2>/dev/null; then
     fi
 
     # Read results
-    source /tmp/faircoin_genesis_results.txt
+    source "$GENESIS_RESULTS"
 
     # ---------------------------------------------------
     # Step 3: Auto-patch chainparams.cpp
@@ -376,8 +386,6 @@ else
     echo "[2/4] Genesis blocks already mined - skipping."
     echo "[3/4] chainparams.cpp already patched - skipping."
 fi
-
-rm -f /tmp/faircoin_genesis_miner.py /tmp/faircoin_genesis_results.txt
 
 # -------------------------------------------------------
 # Step 4: Compile
