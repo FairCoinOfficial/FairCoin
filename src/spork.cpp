@@ -176,10 +176,22 @@ void ReprocessBlocks(int nBlocks)
 }
 
 
+static std::string GetSporkSignatureMessage(const CSporkMessage& spork)
+{
+    const MessageStartChars& messageStart = Params().MessageStart();
+
+    return std::string("spork:") + Params().NetworkIDString() + ":" +
+           HexStr(messageStart, messageStart + MESSAGE_START_SIZE) + ":" +
+           Params().HashGenesisBlock().ToString() + ":" +
+           boost::lexical_cast<std::string>(spork.nSporkID) + ":" +
+           boost::lexical_cast<std::string>(spork.nValue) + ":" +
+           boost::lexical_cast<std::string>(spork.nTimeSigned);
+}
+
 bool CSporkManager::CheckSignature(CSporkMessage& spork)
 {
     //note: need to investigate why this is failing
-    std::string strMessage = boost::lexical_cast<std::string>(spork.nSporkID) + boost::lexical_cast<std::string>(spork.nValue) + boost::lexical_cast<std::string>(spork.nTimeSigned);
+    std::string strMessage = GetSporkSignatureMessage(spork);
     CPubKey pubkey(ParseHex(Params().SporkKey()));
 
     std::string errorMessage = "";
@@ -192,7 +204,7 @@ bool CSporkManager::CheckSignature(CSporkMessage& spork)
 
 bool CSporkManager::Sign(CSporkMessage& spork)
 {
-    std::string strMessage = boost::lexical_cast<std::string>(spork.nSporkID) + boost::lexical_cast<std::string>(spork.nValue) + boost::lexical_cast<std::string>(spork.nTimeSigned);
+    std::string strMessage = GetSporkSignatureMessage(spork);
 
     CKey key2;
     CPubKey pubkey2;
