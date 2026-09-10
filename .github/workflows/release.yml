@@ -16,15 +16,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev autoconf \
-            pkg-config bsdmainutils curl python3
-
-      - name: Build depends
-        run: make -C depends HOST=x86_64-linux-gnu NO_QT=1 -j$(nproc)
+            pkg-config bsdmainutils curl python3 \
+            libssl-dev libboost-all-dev \
+            libdb5.3-dev libdb5.3++-dev \
+            libminiupnpc-dev libzmq3-dev libevent-dev
 
       - name: Build
         run: |
           ./autogen.sh
-          CONFIG_SITE=$PWD/depends/x86_64-linux-gnu/share/config.site ./configure --prefix=/ --without-gui --disable-zmq
+          ./configure --prefix=/ --without-gui --with-incompatible-bdb --disable-zmq
           make -j$(nproc)
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
@@ -52,15 +52,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libtool autotools-dev autoconf \
             pkg-config bsdmainutils curl python3 \
+            libssl-dev libboost-all-dev \
+            libdb5.3-dev libdb5.3++-dev \
+            libminiupnpc-dev libzmq3-dev libevent-dev \
             dpkg-dev fakeroot
-
-      - name: Build depends
-        run: make -C depends HOST=x86_64-linux-gnu NO_QT=1 -j$(nproc)
 
       - name: Build
         run: |
           ./autogen.sh
-          CONFIG_SITE=$PWD/depends/x86_64-linux-gnu/share/config.site ./configure --prefix=/ --without-gui --disable-zmq
+          ./configure --prefix=/ --without-gui --with-incompatible-bdb --disable-zmq
           make -j$(nproc)
           strip src/faircoind src/faircoin-cli src/faircoin-tx
 
@@ -76,14 +76,15 @@ jobs:
           # Docs
           cp COPYING README.md doc/GENERATE-KEYS.md $PKG/usr/share/doc/faircoin/
 
-          # Control file (statically linked — only libc6 needed)
+          # Control file
+          DEPENDS="$(dpkg-shlibdeps -O $PKG/usr/bin/* | sed 's/^shlibs:Depends=//')"
           cat > $PKG/DEBIAN/control <<EOF
           Package: faircoin
           Version: ${VERSION}
           Section: net
           Priority: optional
           Architecture: amd64
-          Depends: libc6
+          Depends: ${DEPENDS}
           Maintainer: FairCoin Official <contact@fairco.in>
           Description: FairCoin cryptocurrency daemon and CLI
            FairCoin is a cryptocurrency with masternodes, coin mixing,
