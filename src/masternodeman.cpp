@@ -959,7 +959,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
 
         CValidationState state;
         CMutableTransaction tx = CMutableTransaction();
-        CTxOut vout = CTxOut(4999.99 * COIN, obfuscationPool.collateralPubKey); // MASTER_NODE_AMOUNT (5000) minus 0.01 fee margin
+        CTxOut vout = CTxOut(MASTER_NODE_AMOUNT * COIN, obfuscationPool.collateralPubKey);
         tx.vin.push_back(vin);
         tx.vout.push_back(vout);
 
